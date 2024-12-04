@@ -1,0 +1,41 @@
+services:
+  db:
+    ports:
+      - 5432:5432
+    container_name: postgresql
+    networks:
+          new:
+    image: postgres
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=qwerty
+      - POSTGRES_USER=postgres
+    restart: always
+
+  migrate:
+        image: migrate/migrate
+        networks:
+            new:
+        depends_on:
+          - db
+        volumes:
+            - ./schema:/schema
+        command: ["-path", "/schema", "-database",  "postgres://postgres:qwerty@db:5432/postgres?sslmode=disable", "up"]
+
+  backend:
+    build:
+      context: .
+    restart: on-failure
+    networks:
+        new:
+    container_name: backend
+    environment:
+      - POSTGRES_PASSWORD=qwerty
+    ports:
+      - 8000:8000
+    depends_on:
+      - migrate
+      - db
+
+networks:
+  new:
