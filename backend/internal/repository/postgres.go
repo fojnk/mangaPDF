@@ -8,8 +8,10 @@ import (
 )
 
 const (
-	usersTable = "users"
-	userTokens = "refresh_tokens"
+	usersTable       = "users"
+	userSessions     = "sessions"
+	userPlannedManga = "planned_manga"
+	userAchivedFiles = "archived_files"
 )
 
 type Config struct {

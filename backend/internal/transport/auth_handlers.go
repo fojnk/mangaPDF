@@ -25,39 +25,45 @@ type InputRegister struct {
 	Password string `json:"password"`
 }
 
-// @Summary Generate tokens
+type InputLogin struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// @Summary Login
 // @Tags Auth
 // @Description Generate tokens
-// @ID generate-tokens
-// @Param guid query string true "Guid"
+// @ID login
+// @Param input body InputLogin true "account info"
 // @Param Ip header string true "Ip"
 // @Produce  json
 // @Success 200 {integer} integer 1
 // @Failure 400,404 {object} transort_error
 // @Failure 500 {object} transort_error
 // @Failure default {object} transort_error
-// @Router /auth/getTokens [get]
-func (h *Handler) getTokens(c *gin.Context) {
-	queryParams := c.Request.URL.Query()
+// @Router /auth/login [post]
+func (h *Handler) login(c *gin.Context) {
+	header := c.GetHeader("Ip")
+	var input InputLogin
 
-	guids, ok := queryParams["guid"]
-	if !ok {
-		NewTransportErrorResponse(c, http.StatusBadRequest, "bad param format")
-		return
-	}
-	guid := guids[0]
-
-	logrus.Info(guid)
-
-	ip := c.GetHeader("Ip")
-
-	match, err := regexp.MatchString(ipv4_regex+`|`+ipv6_regex, ip)
+	match, err := regexp.MatchString(ipv4_regex+`|`+ipv6_regex, header)
 	if !match || err != nil {
 		NewTransportErrorResponse(c, http.StatusBadRequest, "bad IP format ")
 		return
 	}
 
-	accessToken, refreshToken, err := h.services.GenerateTokens(guid, ip)
+	if err := c.BindJSON(&input); err != nil {
+		NewTransportErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	user, err := h.services.GetUserByUsername(input.Username, input.Password)
+	if err != nil {
+		NewTransportErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	accessToken, refreshToken, err := h.services.GenerateTokens(user.Id, header)
 	if err != nil {
 		NewTransportErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return

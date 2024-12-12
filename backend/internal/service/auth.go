@@ -13,7 +13,6 @@ import (
 	"github.com/fojnk/Task-Test-devBack/internal/repository"
 	"github.com/fojnk/Task-Test-devBack/pkg/email"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/exp/rand"
 )
 
@@ -28,64 +27,61 @@ type AuthService struct {
 
 type tokenClaims struct {
 	jwt.StandardClaims
-	Guid string
-	Ip   string
-	Key  string
+	Id  int
+	Ip  string
+	Key string
 }
 
 func NewAuthService(repos repository.Authorization) *AuthService {
 	return &AuthService{repo: repos}
 }
 
-func (a *AuthService) CreateUser(user models.User) (string, error) {
-	user.Guid, _ = generateRandSeq()
-	logrus.Info(user.Guid)
+func (a *AuthService) CreateUser(user models.User) (int, error) {
 	user.Password = generatePasswordHash(user.Password)
 	return a.repo.CreateUser(user)
 }
 
-func (a *AuthService) GenerateTokens(guid, ip string) (string, string, error) {
-	user, err := a.repo.GetUser(guid)
+func (a *AuthService) GenerateTokens(user_id int, ip string) (string, string, error) {
+	user, err := a.repo.GetUser(user_id)
 	if err != nil {
 		return "", "", err
 	}
 
 	pair_key, _ := generateRandSeq()
 
-	accessToken, err := a.newJWT(guid, ip, pair_key, 12*time.Hour)
+	accessToken, err := a.newJWT(user_id, ip, pair_key, 12*time.Hour)
 	if err != nil {
 		return "", "", err
 	}
 
-	refreshToken, err := a.newJWT(guid, ip, pair_key, 1000*time.Hour)
-	if err != nil {
-		return "", "", err
-	}
-
-	hash, err := hashRefreshToken(refreshToken)
+	refreshToken, err := a.newJWT(user_id, ip, pair_key, 1000*time.Hour)
 	if err != nil {
 		return "", "", err
 	}
 
 	encoded := base64.StdEncoding.EncodeToString([]byte(refreshToken))
 
-	logrus.Info("check")
+	newSession := models.Session{
+		RefreshToken: encoded,
+		Fingerprint:  "",
+		Ip:           ip,
+	}
 
-	if _, err := a.repo.SaveRefreshToken(user.Guid, hash); err != nil {
+	if _, err := a.repo.CreateSession(user.Id, newSession); err != nil {
 		return "", "", err
 	}
 
 	return accessToken, encoded, err
 }
 
-func (a *AuthService) newJWT(guid, ip, pair_key string, expTime time.Duration) (string, error) {
+func (a *AuthService) newJWT(user_id int, ip, pair_key string, expTime time.Duration) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, &tokenClaims{
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(expTime).Unix(),
 			IssuedAt:  time.Now().Unix(),
 		},
-		guid,
+		user_id,
 		ip,
 		pair_key,
 	})
@@ -93,11 +89,15 @@ func (a *AuthService) newJWT(guid, ip, pair_key string, expTime time.Duration) (
 	return token.SignedString([]byte(key))
 }
 
-func (a *AuthService) GetUserByGuid(guid string) (models.User, error) {
-	return a.repo.GetUser(guid)
+func (a *AuthService) GetUserById(id int) (models.User, error) {
+	return a.repo.GetUser(id)
 }
 
-func (a *AuthService) parseToken(acessToken string) (string, string, string, error) {
+func (a *AuthService) GetUserByUsername(username, password string) (models.User, error) {
+	return a.repo.GetUserByUsername(username, password)
+}
+
+func (a *AuthService) parseToken(acessToken string) (int, string, string, error) {
 	token, err := jwt.ParseWithClaims(acessToken, &tokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("invalid signing method")
@@ -107,23 +107,23 @@ func (a *AuthService) parseToken(acessToken string) (string, string, string, err
 	})
 
 	if err != nil {
-		return "", "", "", err
+		return 0, "", "", err
 	}
 
 	claims, ok := token.Claims.(*tokenClaims)
 	if !ok {
-		return "", "", "", errors.New("bad claims format")
+		return 0, "", "", errors.New("bad claims format")
 	}
-	return claims.Guid, claims.Ip, claims.Key, nil
+	return claims.Id, claims.Ip, claims.Key, nil
 }
 
 func (s *AuthService) Refresh(accessToken, refreshToken, ip string) (string, string, error) {
-	guid, lastIp, pair_key1, err := s.parseToken(accessToken)
+	id, lastIp, pair_key1, err := s.parseToken(accessToken)
 	if err != nil {
 		return "", "", err
 	}
 
-	user, err := s.repo.GetUser(guid)
+	user, err := s.repo.GetUser(id)
 	if err != nil {
 		return "", "", err
 	}
@@ -132,20 +132,20 @@ func (s *AuthService) Refresh(accessToken, refreshToken, ip string) (string, str
 		return "", "", err
 	}
 
-	tokens, err := s.repo.GetUserTokens(guid)
+	sessions, err := s.repo.GetUserSessions(id)
 	if err != nil {
 		return "", "", err
 	}
 
 	exists := false
 	var tokenId int
+	var decoded []byte
 
-	decoded, _ := base64.StdEncoding.DecodeString(refreshToken)
-
-	for _, token := range tokens {
-		if checkEqHash(token.TokenHash, string(decoded)) {
+	for _, session := range sessions {
+		if session.RefreshToken == refreshToken {
+			decoded, _ = base64.StdEncoding.DecodeString(refreshToken)
 			exists = true
-			tokenId = token.Id
+			tokenId = session.Id
 			break
 		}
 	}
@@ -172,19 +172,9 @@ func (s *AuthService) Refresh(accessToken, refreshToken, ip string) (string, str
 		logrus.Printf("send warning email to user")
 	}
 
-	s.repo.RemoveToken(tokenId)
+	s.repo.ClearSession(tokenId)
 
-	return s.GenerateTokens(guid, ip)
-}
-
-func hashRefreshToken(refreshToken string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(refreshToken[:72]), bcrypt.DefaultCost)
-	return string(hash), err
-}
-
-func checkEqHash(hash, refreshToken string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(refreshToken[:72]))
-	return err == nil
+	return s.GenerateTokens(id, ip)
 }
 
 func generatePasswordHash(password string) string {
