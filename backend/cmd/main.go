@@ -30,7 +30,7 @@ func main() {
 	}
 
 	if err := godotenv.Load(); err != nil {
-		logrus.Fatalf("Load .env files failed: %s", err.Error())
+		logrus.Info("Load .env files failed: %s", err.Error())
 	}
 
 	db, err := repository.NewPostgresDB(repository.Config{

@@ -25,39 +25,45 @@ type InputRegister struct {
 	Password string `json:"password"`
 }
 
-// @Summary Generate tokens
+type InputLogin struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// @Summary Login
 // @Tags Auth
 // @Description Generate tokens
-// @ID generate-tokens
-// @Param guid query string true "Guid"
+// @ID login
+// @Param input body InputLogin true "account info"
 // @Param Ip header string true "Ip"
 // @Produce  json
 // @Success 200 {integer} integer 1
 // @Failure 400,404 {object} transort_error
 // @Failure 500 {object} transort_error
 // @Failure default {object} transort_error
-// @Router /auth/getTokens [get]
-func (h *Handler) getTokens(c *gin.Context) {
-	queryParams := c.Request.URL.Query()
+// @Router /auth/login [post]
+func (h *Handler) login(c *gin.Context) {
+	header := c.GetHeader("Ip")
+	var input InputLogin
 
-	guids, ok := queryParams["guid"]
-	if !ok {
-		NewTransportErrorResponse(c, http.StatusBadRequest, "bad param format")
-		return
-	}
-	guid := guids[0]
-
-	logrus.Info(guid)
-
-	ip := c.GetHeader("Ip")
-
-	match, err := regexp.MatchString(ipv4_regex+`|`+ipv6_regex, ip)
+	match, err := regexp.MatchString(ipv4_regex+`|`+ipv6_regex, header)
 	if !match || err != nil {
 		NewTransportErrorResponse(c, http.StatusBadRequest, "bad IP format ")
 		return
 	}
 
-	accessToken, refreshToken, err := h.services.GenerateTokens(guid, ip)
+	if err := c.BindJSON(&input); err != nil {
+		NewTransportErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	user, err := h.services.GetUserByUsername(input.Username, input.Password)
+	if err != nil {
+		NewTransportErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	accessToken, refreshToken, err := h.services.GenerateTokens(user.Id)
 	if err != nil {
 		NewTransportErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -98,7 +104,7 @@ func (h *Handler) refresh(c *gin.Context) {
 		return
 	}
 
-	newAccess, newRefresh, err := h.services.Refresh(input.AccesToken, input.RefreshToken, header)
+	newAccess, newRefresh, err := h.services.Refresh(input.AccesToken, input.RefreshToken)
 	if err != nil {
 		NewTransportErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
@@ -150,17 +156,47 @@ func (h *Handler) register(c *gin.Context) {
 		return
 	}
 
-	logrus.Printf("generate tokens for user: %s", id)
+	logrus.Printf("generate tokens for user: %d", id)
 
-	accessToken, refreshToken, err := h.services.Authorization.GenerateTokens(id, header)
+	accessToken, refreshToken, err := h.services.Authorization.GenerateTokens(id)
 	if err != nil {
 		NewTransportErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"Guid":         id,
+		"id":           id,
 		"accessToken":  accessToken,
 		"refreshToken": refreshToken,
+	})
+}
+
+// @Summary Get Account Ingo
+// @Security ApiKeyAuth
+// @Tags Account
+// @Description Get accound by id
+// @ID get-account
+// @Produce  json
+// @Success 200 {integer} integer 1
+// @Failure 400,404 {object} transort_error
+// @Failure 500 {object} transort_error
+// @Failure default {object} transort_error
+// @Router /api/v1/account [get]
+func (h *Handler) getAccountInfo(c *gin.Context) {
+	userId, ok := c.Get(UserId)
+	if !ok {
+		NewTransportErrorResponse(c, http.StatusBadRequest, "You are not authorized!!!")
+		return
+	}
+
+	user, err := h.services.Authorization.GetUserById(userId.(int))
+
+	if err != nil {
+		NewTransportErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, map[string]interface{}{
+		"user": user,
 	})
 }

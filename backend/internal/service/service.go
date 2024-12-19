@@ -6,10 +6,12 @@ import (
 )
 
 type Authorization interface {
-	CreateUser(user models.User) (string, error)
-	GenerateTokens(guid, ip string) (string, string, error)
-	Refresh(accessToken, refreshToken, ip string) (string, string, error)
-	GetUserByGuid(guid string) (models.User, error)
+	CreateUser(user models.User) (int, error)
+	GenerateTokens(int) (string, string, error)
+	Refresh(string, string) (string, string, error)
+	GetUserById(id int) (models.User, error)
+	GetUserByUsername(username, password string) (models.User, error)
+	ParseToken(string) (int, string, error)
 }
 
 type Service struct {
