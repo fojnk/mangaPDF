@@ -15,8 +15,58 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/auth/getTokens": {
+        "/api/v1/account": {
             "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get accound by id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Account"
+                ],
+                "summary": "Get Account Ingo",
+                "operationId": "get-account",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
                 "description": "Generate tokens",
                 "produces": [
                     "application/json"
@@ -24,15 +74,17 @@ const docTemplate = `{
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Generate tokens",
-                "operationId": "generate-tokens",
+                "summary": "Login",
+                "operationId": "login",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Guid",
-                        "name": "guid",
-                        "in": "query",
-                        "required": true
+                        "description": "account info",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/transport.InputLogin"
+                        }
                     },
                     {
                         "type": "string",
@@ -210,6 +262,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "transport.InputLogin": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "transport.InputRegister": {
             "type": "object",
             "properties": {

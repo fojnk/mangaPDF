@@ -62,6 +62,17 @@ func (a *AuthPostgres) GetUserSessions(id int) ([]models.Session, error) {
 	return sessions, nil
 }
 
+func (a *AuthPostgres) GetSession(user_id int, refresh_token string) (models.Session, error) {
+	var session models.Session
+	query := fmt.Sprintf(`
+		SELECT id, user_id, refresh_token, fingerprint, ip
+		FROM %s 
+		WHERE user_id=$1 AND refresh_token=$2`, userSessions)
+
+	err := a.db.Get(&session, query, user_id, refresh_token)
+	return session, err
+}
+
 func (a *AuthPostgres) CreateSession(user_id int, session models.Session) (int, error) {
 	var id int
 	query := fmt.Sprintf(`

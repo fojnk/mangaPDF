@@ -11,8 +11,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/fojnk/Task-Test-devBack/internal/models"
 	"github.com/fojnk/Task-Test-devBack/internal/repository"
-	"github.com/fojnk/Task-Test-devBack/pkg/email"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/rand"
 )
 
@@ -28,7 +26,6 @@ type AuthService struct {
 type tokenClaims struct {
 	jwt.StandardClaims
 	Id  int
-	Ip  string
 	Key string
 }
 
@@ -41,7 +38,7 @@ func (a *AuthService) CreateUser(user models.User) (int, error) {
 	return a.repo.CreateUser(user)
 }
 
-func (a *AuthService) GenerateTokens(user_id int, ip string) (string, string, error) {
+func (a *AuthService) GenerateTokens(user_id int) (string, string, error) {
 	user, err := a.repo.GetUser(user_id)
 	if err != nil {
 		return "", "", err
@@ -49,12 +46,12 @@ func (a *AuthService) GenerateTokens(user_id int, ip string) (string, string, er
 
 	pair_key, _ := generateRandSeq()
 
-	accessToken, err := a.newJWT(user_id, ip, pair_key, 12*time.Hour)
+	accessToken, err := a.newJWT(user_id, pair_key, 12*time.Hour)
 	if err != nil {
 		return "", "", err
 	}
 
-	refreshToken, err := a.newJWT(user_id, ip, pair_key, 1000*time.Hour)
+	refreshToken, err := a.newJWT(user_id, pair_key, 1000*time.Hour)
 	if err != nil {
 		return "", "", err
 	}
@@ -64,7 +61,7 @@ func (a *AuthService) GenerateTokens(user_id int, ip string) (string, string, er
 	newSession := models.Session{
 		RefreshToken: encoded,
 		Fingerprint:  "",
-		Ip:           ip,
+		Ip:           "",
 	}
 
 	if _, err := a.repo.CreateSession(user.Id, newSession); err != nil {
@@ -74,7 +71,7 @@ func (a *AuthService) GenerateTokens(user_id int, ip string) (string, string, er
 	return accessToken, encoded, err
 }
 
-func (a *AuthService) newJWT(user_id int, ip, pair_key string, expTime time.Duration) (string, error) {
+func (a *AuthService) newJWT(user_id int, pair_key string, expTime time.Duration) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, &tokenClaims{
 		jwt.StandardClaims{
@@ -82,7 +79,6 @@ func (a *AuthService) newJWT(user_id int, ip, pair_key string, expTime time.Dura
 			IssuedAt:  time.Now().Unix(),
 		},
 		user_id,
-		ip,
 		pair_key,
 	})
 
@@ -94,10 +90,11 @@ func (a *AuthService) GetUserById(id int) (models.User, error) {
 }
 
 func (a *AuthService) GetUserByUsername(username, password string) (models.User, error) {
-	return a.repo.GetUserByUsername(username, password)
+	password_hash := generatePasswordHash(password)
+	return a.repo.GetUserByUsername(username, password_hash)
 }
 
-func (a *AuthService) parseToken(acessToken string) (int, string, string, error) {
+func (a *AuthService) ParseToken(acessToken string) (int, string, error) {
 	token, err := jwt.ParseWithClaims(acessToken, &tokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("invalid signing method")
@@ -107,54 +104,30 @@ func (a *AuthService) parseToken(acessToken string) (int, string, string, error)
 	})
 
 	if err != nil {
-		return 0, "", "", err
+		return 0, "", err
 	}
 
 	claims, ok := token.Claims.(*tokenClaims)
 	if !ok {
-		return 0, "", "", errors.New("bad claims format")
+		return 0, "", errors.New("bad claims format")
 	}
-	return claims.Id, claims.Ip, claims.Key, nil
+	return claims.Id, claims.Key, nil
 }
 
-func (s *AuthService) Refresh(accessToken, refreshToken, ip string) (string, string, error) {
-	id, lastIp, pair_key1, err := s.parseToken(accessToken)
+func (s *AuthService) Refresh(accessToken, refreshToken string) (string, string, error) {
+	id, pair_key1, err := s.ParseToken(accessToken)
 	if err != nil {
 		return "", "", err
 	}
 
-	user, err := s.repo.GetUser(id)
+	session, err := s.repo.GetSession(id, refreshToken)
 	if err != nil {
-		return "", "", err
-	}
-
-	if err != nil {
-		return "", "", err
-	}
-
-	sessions, err := s.repo.GetUserSessions(id)
-	if err != nil {
-		return "", "", err
-	}
-
-	exists := false
-	var tokenId int
-	var decoded []byte
-
-	for _, session := range sessions {
-		if session.RefreshToken == refreshToken {
-			decoded, _ = base64.StdEncoding.DecodeString(refreshToken)
-			exists = true
-			tokenId = session.Id
-			break
-		}
-	}
-
-	if !exists {
 		return "", "", errors.New("unknown refresh token")
 	}
 
-	_, _, pair_key2, err := s.parseToken(string(decoded))
+	decoded, _ := base64.StdEncoding.DecodeString(refreshToken)
+
+	_, pair_key2, err := s.ParseToken(string(decoded))
 	if err != nil {
 		return "", "", err
 	}
@@ -163,18 +136,18 @@ func (s *AuthService) Refresh(accessToken, refreshToken, ip string) (string, str
 		return "", "", errors.New("incorrect token pair")
 	}
 
-	if ip != lastIp {
-		if err := email.SendHtmlEmail([]string{user.Email}, "Авторизация с другого IP",
-			"Если это вы авторизовались недавно - просто проигнорируйте это сообщение."); err != nil {
-			fmt.Println(err.Error())
-		}
+	// if ip != lastIp {
+	// 	if err := email.SendHtmlEmail([]string{user.Email}, "Авторизация с другого IP",
+	// 		"Если это вы авторизовались недавно - просто проигнорируйте это сообщение."); err != nil {
+	// 		fmt.Println(err.Error())
+	// 	}
 
-		logrus.Printf("send warning email to user")
-	}
+	// 	logrus.Printf("send warning email to user")
+	// }
 
-	s.repo.ClearSession(tokenId)
+	s.repo.ClearSession(session.Id)
 
-	return s.GenerateTokens(id, ip)
+	return s.GenerateTokens(id)
 }
 
 func generatePasswordHash(password string) string {

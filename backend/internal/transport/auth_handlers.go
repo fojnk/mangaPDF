@@ -63,7 +63,7 @@ func (h *Handler) login(c *gin.Context) {
 		return
 	}
 
-	accessToken, refreshToken, err := h.services.GenerateTokens(user.Id, header)
+	accessToken, refreshToken, err := h.services.GenerateTokens(user.Id)
 	if err != nil {
 		NewTransportErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -104,7 +104,7 @@ func (h *Handler) refresh(c *gin.Context) {
 		return
 	}
 
-	newAccess, newRefresh, err := h.services.Refresh(input.AccesToken, input.RefreshToken, header)
+	newAccess, newRefresh, err := h.services.Refresh(input.AccesToken, input.RefreshToken)
 	if err != nil {
 		NewTransportErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
@@ -156,17 +156,47 @@ func (h *Handler) register(c *gin.Context) {
 		return
 	}
 
-	logrus.Printf("generate tokens for user: %s", id)
+	logrus.Printf("generate tokens for user: %d", id)
 
-	accessToken, refreshToken, err := h.services.Authorization.GenerateTokens(id, header)
+	accessToken, refreshToken, err := h.services.Authorization.GenerateTokens(id)
 	if err != nil {
 		NewTransportErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"Guid":         id,
+		"id":           id,
 		"accessToken":  accessToken,
 		"refreshToken": refreshToken,
+	})
+}
+
+// @Summary Get Account Ingo
+// @Security ApiKeyAuth
+// @Tags Account
+// @Description Get accound by id
+// @ID get-account
+// @Produce  json
+// @Success 200 {integer} integer 1
+// @Failure 400,404 {object} transort_error
+// @Failure 500 {object} transort_error
+// @Failure default {object} transort_error
+// @Router /api/v1/account [get]
+func (h *Handler) getAccountInfo(c *gin.Context) {
+	userId, ok := c.Get(UserId)
+	if !ok {
+		NewTransportErrorResponse(c, http.StatusBadRequest, "You are not authorized!!!")
+		return
+	}
+
+	user, err := h.services.Authorization.GetUserById(userId.(int))
+
+	if err != nil {
+		NewTransportErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, map[string]interface{}{
+		"user": user,
 	})
 }

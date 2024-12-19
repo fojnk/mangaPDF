@@ -1,5 +1,12 @@
 basePath: /
 definitions:
+  transport.InputLogin:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
   transport.InputRegister:
     properties:
       email:
@@ -27,16 +34,49 @@ info:
   title: AuthService
   version: "1.0"
 paths:
-  /auth/getTokens:
+  /api/v1/account:
     get:
+      description: Get accound by id
+      operationId: get-account
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Account Ingo
+      tags:
+      - Account
+  /auth/login:
+    post:
       description: Generate tokens
-      operationId: generate-tokens
+      operationId: login
       parameters:
-      - description: Guid
-        in: query
-        name: guid
+      - description: account info
+        in: body
+        name: input
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/transport.InputLogin'
       - description: Ip
         in: header
         name: Ip
@@ -65,7 +105,7 @@ paths:
           description: ""
           schema:
             $ref: '#/definitions/transport.transort_error'
-      summary: Generate tokens
+      summary: Login
       tags:
       - Auth
   /auth/refresh:

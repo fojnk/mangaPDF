@@ -10,6 +10,7 @@ type Authorization interface {
 	GetUser(id int) (models.User, error)
 	GetUserSessions(id int) ([]models.Session, error)
 	CreateSession(user_id int, session models.Session) (int, error)
+	GetSession(user_id int, refresh_token string) (models.Session, error)
 	GetUserByUsername(username, password string) (models.User, error)
 	ClearSession(id int) error
 }

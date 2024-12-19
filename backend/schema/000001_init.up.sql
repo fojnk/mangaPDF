@@ -13,24 +13,24 @@ CREATE TABLE users (
 
 CREATE TABLE sessions (
     id serial not null unique,
-    user_id varchar(200) references users (id) on delete cascade not null,
-    refresh_token varchar(256) not null unique,
+    user_id serial references users (id) on delete cascade not null,
+    refresh_token text not null unique,
     fingerprint varchar(256) not null,
     Ip varchar(256)
 );
 
 CREATE TABLE planned_manga (
     id serial not null unique,
-    user_id varchar(200) references users (id) on delete cascade not null,
+    user_id serial references users (id) on delete cascade not null,
     site varchar(256) not null,
     manga_id int
 );
 
 CREATE TABLE archived_files (
     id serial not null unique,
-    user_id varchar(200) references users (id) on delete cascade not null,
+    user_id serial references users (id) on delete cascade not null,
     name varchar(256) not null,
-    url varchar(256) not null,
+    url varchar(256) not null
 );
 
 CREATE TABLE ads (
