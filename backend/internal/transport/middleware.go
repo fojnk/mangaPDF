@@ -17,13 +17,13 @@ func (h *Handler) userIdentity(c *gin.Context) {
 
 	splitParts := strings.Split(header, " ")
 	if len(splitParts) != 2 {
-		NewTransportErrorResponse(c, http.StatusBadRequest, "bad token (user doesn't authorized)")
+		NewTransportErrorResponse(c, http.StatusUnauthorized, "bad token (user doesn't authorized)")
 		return
 	}
 
 	id, _, err := h.services.Authorization.ParseToken(splitParts[1])
 	if err != nil {
-		NewTransportErrorResponse(c, http.StatusBadRequest, "parse token failed")
+		NewTransportErrorResponse(c, http.StatusUnauthorized, "parse token failed")
 		return
 	}
 

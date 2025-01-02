@@ -63,15 +63,17 @@ func (h *Handler) login(c *gin.Context) {
 		return
 	}
 
-	accessToken, refreshToken, err := h.services.GenerateTokens(user.Id)
+	accessToken, refreshToken, expA, expR, err := h.services.GenerateTokens(user.Id)
 	if err != nil {
 		NewTransportErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"accessToken":  accessToken,
-		"refreshToken": refreshToken,
+		"accessToken":       accessToken,
+		"access_expire_at":  expA,
+		"refreshToken":      refreshToken,
+		"refresh_expire_at": expR,
 	})
 }
 
@@ -104,15 +106,17 @@ func (h *Handler) refresh(c *gin.Context) {
 		return
 	}
 
-	newAccess, newRefresh, err := h.services.Refresh(input.AccesToken, input.RefreshToken)
+	newAccess, newRefresh, expA, expR, err := h.services.Refresh(input.AccesToken, input.RefreshToken)
 	if err != nil {
 		NewTransportErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"accessToken":  newAccess,
-		"refreshToken": newRefresh,
+		"accessToken":       newAccess,
+		"access_expire_at":  expA,
+		"refreshToken":      newRefresh,
+		"refresh_expire_at": expR,
 	})
 }
 
@@ -158,16 +162,17 @@ func (h *Handler) register(c *gin.Context) {
 
 	logrus.Printf("generate tokens for user: %d", id)
 
-	accessToken, refreshToken, err := h.services.Authorization.GenerateTokens(id)
+	accessToken, refreshToken, expA, expR, err := h.services.Authorization.GenerateTokens(id)
 	if err != nil {
 		NewTransportErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"id":           id,
-		"accessToken":  accessToken,
-		"refreshToken": refreshToken,
+		"accessToken":       accessToken,
+		"access_expire_at":  expA,
+		"refreshToken":      refreshToken,
+		"refresh_expire_at": expR,
 	})
 }
 
