@@ -38,22 +38,22 @@ func (a *AuthService) CreateUser(user models.User) (int, error) {
 	return a.repo.CreateUser(user)
 }
 
-func (a *AuthService) GenerateTokens(user_id int) (string, string, error) {
+func (a *AuthService) GenerateTokens(user_id int) (string, string, int64, int64, error) {
 	user, err := a.repo.GetUser(user_id)
 	if err != nil {
-		return "", "", err
+		return "", "", 0, 0, err
 	}
 
 	pair_key, _ := generateRandSeq()
 
-	accessToken, err := a.newJWT(user_id, pair_key, 12*time.Hour)
+	accessToken, expA, err := a.newJWT(user_id, pair_key, 12*time.Hour)
 	if err != nil {
-		return "", "", err
+		return "", "", 0, 0, err
 	}
 
-	refreshToken, err := a.newJWT(user_id, pair_key, 1000*time.Hour)
+	refreshToken, expR, err := a.newJWT(user_id, pair_key, 1000*time.Hour)
 	if err != nil {
-		return "", "", err
+		return "", "", 0, 0, err
 	}
 
 	encoded := base64.StdEncoding.EncodeToString([]byte(refreshToken))
@@ -65,24 +65,26 @@ func (a *AuthService) GenerateTokens(user_id int) (string, string, error) {
 	}
 
 	if _, err := a.repo.CreateSession(user.Id, newSession); err != nil {
-		return "", "", err
+		return "", "", 0, 0, err
 	}
 
-	return accessToken, encoded, err
+	return accessToken, encoded, expA, expR, err
 }
 
-func (a *AuthService) newJWT(user_id int, pair_key string, expTime time.Duration) (string, error) {
-
+func (a *AuthService) newJWT(user_id int, pair_key string, expTime time.Duration) (string, int64, error) {
+	exp := time.Now().Add(expTime).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, &tokenClaims{
 		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(expTime).Unix(),
+			ExpiresAt: exp,
 			IssuedAt:  time.Now().Unix(),
 		},
 		user_id,
 		pair_key,
 	})
 
-	return token.SignedString([]byte(key))
+	retr, err := token.SignedString([]byte(key))
+
+	return retr, exp, err
 }
 
 func (a *AuthService) GetUserById(id int) (models.User, error) {
@@ -114,26 +116,26 @@ func (a *AuthService) ParseToken(acessToken string) (int, string, error) {
 	return claims.Id, claims.Key, nil
 }
 
-func (s *AuthService) Refresh(accessToken, refreshToken string) (string, string, error) {
+func (s *AuthService) Refresh(accessToken, refreshToken string) (string, string, int64, int64, error) {
 	id, pair_key1, err := s.ParseToken(accessToken)
 	if err != nil {
-		return "", "", err
+		return "", "", 0, 0, err
 	}
 
 	session, err := s.repo.GetSession(id, refreshToken)
 	if err != nil {
-		return "", "", errors.New("unknown refresh token")
+		return "", "", 0, 0, errors.New("unknown refresh token")
 	}
 
 	decoded, _ := base64.StdEncoding.DecodeString(refreshToken)
 
 	_, pair_key2, err := s.ParseToken(string(decoded))
 	if err != nil {
-		return "", "", err
+		return "", "", 0, 0, err
 	}
 
 	if pair_key1 != pair_key2 {
-		return "", "", errors.New("incorrect token pair")
+		return "", "", 0, 0, errors.New("incorrect token pair")
 	}
 
 	// if ip != lastIp {
