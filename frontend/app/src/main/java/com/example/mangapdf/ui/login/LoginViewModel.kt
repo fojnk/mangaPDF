@@ -1,10 +1,11 @@
 package com.example.mangapdf.ui.login
 
+import UserRepository
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.example.mangapdf.repositry.UserRepository
+import com.example.mangapdf.data.local.SecurePreferencesManager
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -17,6 +18,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         userRepository.login(username, password) { result ->
             result.onSuccess {response ->
                 if (response != null) {
+                    SecurePreferencesManager.saveTokens(response.accessToken, response.refreshToken)
                     _loginStatus.value = LoginStatus(true, response.accessToken, response.refreshToken, null)
                 }
             }

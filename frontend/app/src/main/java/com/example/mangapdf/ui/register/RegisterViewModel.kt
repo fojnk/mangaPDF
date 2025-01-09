@@ -1,12 +1,11 @@
 package com.example.mangapdf.ui.register
 
+import UserRepository
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import com.example.mangapdf.repositry.UserRepository
-import com.example.mangapdf.ui.login.LoginStatus
+import com.example.mangapdf.data.local.SecurePreferencesManager
 
 class RegisterViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -20,6 +19,7 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
         userRepository.register(email, name, password) { result ->
             result.onSuccess {response ->
                 if (response != null) {
+                    SecurePreferencesManager.saveTokens(response.accessToken, response.refreshToken)
                     _registerStatus.value = RegisterStatus(true, response.accessToken, response.refreshToken, null)
                 }
             }
