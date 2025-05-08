@@ -1,0 +1,311 @@
+package tools
+
+import (
+	"bytes"
+	"compress/flate"
+	"crypto/md5"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"io"
+	"log/slog"
+	"math"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/aki237/nscjar"
+	"github.com/fojnk/Task-Test-devBack/configs"
+	"github.com/fojnk/Task-Test-devBack/internal/models"
+	"github.com/goware/urlx"
+	"github.com/headzoo/surf"
+	"github.com/mholt/archiver/v3"
+)
+
+func CheckUpdate(w http.ResponseWriter, r *http.Request) {
+	tmpData := map[string]string{}
+	jsonResp := make(map[string]interface{})
+	body := []byte{}
+
+	hasError := false
+
+	resp, err := http.Get("https://raw.githubusercontent.com/lirix360/ReadmangaGrabber/master/version.json")
+	if err != nil {
+		slog.Error(
+			"Ошибка при запросе информации о версии",
+			slog.String("Message", err.Error()),
+		)
+		hasError = true
+	}
+	defer resp.Body.Close()
+
+	if !hasError {
+		body, err = io.ReadAll(resp.Body)
+		if err != nil {
+			slog.Error(
+				"Ошибка при получении информации о версии",
+				slog.String("Message", err.Error()),
+			)
+			hasError = true
+		}
+	}
+
+	if !hasError {
+		err = json.Unmarshal(body, &tmpData)
+		if err != nil {
+			slog.Error(
+				"Ошибка при обработке информации о версии",
+				slog.String("Message", err.Error()),
+			)
+			hasError = true
+		}
+	}
+
+	if !hasError {
+		lastVer, _ := strconv.Atoi(tmpData["last_version"])
+		appVer, _ := strconv.Atoi(configs.APPver)
+
+		jsonResp["status"] = "success"
+		jsonResp["has_update"] = false
+
+		if appVer < lastVer {
+			jsonResp["has_update"] = true
+		}
+	} else {
+		jsonResp["status"] = "error"
+	}
+
+	respData, _ := json.Marshal(jsonResp)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(respData)
+}
+
+func CheckAuth(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		slog.Error(
+			"Ошибка при парсинге формы",
+			slog.String("Message", err.Error()),
+		)
+		SendError("Ошибка при парсинге формы.", w)
+		return
+	}
+
+	urlStr := r.FormValue("URL")
+
+	url, _ := urlx.Parse(urlStr)
+	host, _, _ := urlx.SplitHostPort(url)
+
+	resp := make(map[string]interface{})
+	resp["status"] = "error"
+
+	if IsFileExist(host + ".txt") {
+		resp["status"] = "success"
+	}
+
+	respData, _ := json.Marshal(resp)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(respData)
+}
+
+func GetMD5(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func SendError(errText string, w http.ResponseWriter) {
+	resp := make(map[string]interface{})
+
+	resp["status"] = "error"
+	resp["errtext"] = errText
+
+	respData, _ := json.Marshal(resp)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(respData)
+}
+
+func ReverseList(chaptersList []models.ChaptersList) []models.ChaptersList {
+	newChaptersList := make([]models.ChaptersList, 0, len(chaptersList))
+
+	for i := len(chaptersList) - 1; i >= 0; i-- {
+		newChaptersList = append(newChaptersList, chaptersList[i])
+	}
+
+	return newChaptersList
+}
+
+func GetPageCF(pageURL string) (io.ReadCloser, error) {
+	var body bytes.Buffer
+	bow := surf.NewBrowser()
+	bow.SetUserAgent(configs.Cfg.UserAgent)
+
+	url, _ := urlx.Parse(pageURL)
+	host, _, _ := urlx.SplitHostPort(url)
+
+	cookieFile := host + ".txt"
+
+	useProxy := false
+
+	if CheckSource(configs.Cfg.CurrentURLs.MangaLib, host) {
+		useProxy = configs.Cfg.Proxy.Use.Mangalib
+	} else if CheckSource(configs.Cfg.CurrentURLs.ReadManga, host) {
+		useProxy = configs.Cfg.Proxy.Use.Readmanga
+	}
+
+	if useProxy {
+		proxyUrl, err := url.Parse(configs.Cfg.Proxy.Type + "://" + configs.Cfg.Proxy.Addr + ":" + configs.Cfg.Proxy.Port)
+		slog.Info(
+			"Используется прокси",
+			slog.String("Server", proxyUrl.String()),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		bow.SetTransport(&http.Transport{Proxy: http.ProxyURL(proxyUrl)})
+	}
+
+	if IsFileExist(cookieFile) {
+		f, err := os.Open(cookieFile)
+		if err != nil {
+			return nil, err
+		}
+
+		jar := nscjar.Parser{}
+
+		cookies, err := jar.Unmarshal(f)
+		if err != nil {
+			return nil, err
+		}
+
+		url, _ := urlx.Parse(pageURL)
+
+		bow.CookieJar().SetCookies(url, cookies)
+	}
+
+	err := bow.Open(pageURL)
+	if err != nil {
+		slog.Error(
+			"Ошибка при инициализации запроса",
+			slog.String("Message", err.Error()),
+		)
+		return nil, err
+	}
+
+	_, err = bow.Download(&body)
+	if err != nil {
+		slog.Error(
+			"Ошибка при выполнении запроса",
+			slog.String("Message", err.Error()),
+		)
+		return nil, err
+	}
+
+	return io.NopCloser(strings.NewReader(body.String())), nil
+}
+
+func SavePage(body string) {
+	file, err := os.Create("saved.html")
+	if err != nil {
+		slog.Error(
+			"Ошибка при сохранении страницы",
+			slog.String("Message", err.Error()),
+		)
+	} else {
+		file.WriteString(body)
+	}
+	file.Close()
+}
+
+func CreateCBZ(chapterPath string) error {
+	z := archiver.Zip{
+		CompressionLevel:       flate.NoCompression,
+		MkdirAll:               true,
+		SelectiveCompression:   true,
+		ContinueOnError:        false,
+		OverwriteExisting:      true,
+		ImplicitTopLevelFolder: false,
+	}
+
+	err := z.Archive([]string{chapterPath}, chapterPath+".zip")
+	if err != nil {
+		slog.Error(
+			"Ошибка при создании архива ("+chapterPath+".zip)",
+			slog.String("Message", err.Error()),
+		)
+		models.WSChan <- models.WSData{
+			Cmd: "updateLog",
+			Payload: map[string]interface{}{
+				"type": "err",
+				"text": "-- Ошибка при создании CBZ:" + err.Error(),
+			},
+		}
+		return err
+	}
+	defer z.Close()
+
+	err = os.Rename(chapterPath+".zip", chapterPath+".cbz")
+	if err != nil {
+		slog.Error(
+			"Ошибка при переименовании архива ("+chapterPath+".zip)",
+			slog.String("Message", err.Error()),
+		)
+		models.WSChan <- models.WSData{
+			Cmd: "updateLog",
+			Payload: map[string]interface{}{
+				"type": "err",
+				"text": "-- Ошибка при создании CBZ:" + err.Error(),
+			},
+		}
+		return err
+	}
+
+	return nil
+}
+
+func GetPercent(cur, total int) int {
+	var percent int
+
+	if cur == total {
+		percent = 100
+	} else {
+		percent = int(math.Round((100 / float64(total)) * float64(cur)))
+	}
+
+	return percent
+}
+
+func IsFileExist(filePath string) bool {
+	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+
+	return true
+}
+
+func RemoveDuplicateStr(strSlice []string) []string {
+	allKeys := make(map[string]bool)
+	list := []string{}
+	for _, item := range strSlice {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
+}
+
+func CheckSource(srcList []string, srcHost string) bool {
+	for _, src := range srcList {
+		if strings.Contains(srcHost, src) {
+			return true
+		}
+	}
+
+	return false
+}
