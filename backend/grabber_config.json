@@ -1,0 +1,31 @@
+{
+  "savepath": "Manga/",
+  "fav_title": "ru",
+  "show_gui": true,
+  "UserAgent": "",
+  "server": {
+    "addr": "127.0.0.1",
+    "port": "8888"
+  },
+  "readmanga": {
+    "timeout_image": 500,
+    "timeout_chapter": 1000
+  },
+  "mangalib": {
+    "timeout_image": 500,
+    "timeout_chapter": 1000
+  },
+  "proxy": {
+    "type": "",
+    "addr": "",
+    "port": "",
+    "use": {
+      "mangalib": false,
+      "readmanga": false
+    }
+  },
+  "CurrentURLs": {
+    "MangaLib": null,
+    "ReadManga": null
+  }
+}

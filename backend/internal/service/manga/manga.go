@@ -1,6 +1,7 @@
 package manga
 
 import (
+	"bytes"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -13,7 +14,18 @@ import (
 	"github.com/goware/urlx"
 )
 
-func GetChaptersList(w http.ResponseWriter, r *http.Request) {
+type MangaService struct {
+}
+
+func NewMangaService() *MangaService {
+	return &MangaService{}
+}
+
+func (m *MangaService) GetMangaList() (bytes.Buffer, error) {
+	return mangalib.GetMangaList()
+}
+
+func (m *MangaService) GetChaptersList(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var isMtr bool
 	var userHash string
@@ -70,7 +82,7 @@ func GetChaptersList(w http.ResponseWriter, r *http.Request) {
 	w.Write(respData)
 }
 
-func DownloadManga(w http.ResponseWriter, r *http.Request) {
+func (m *MangaService) DownloadManga(w http.ResponseWriter, r *http.Request) {
 	isMtr := false
 
 	if r.FormValue("isMtr") == "true" {

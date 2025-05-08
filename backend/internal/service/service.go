@@ -1,8 +1,13 @@
 package service
 
 import (
+	"bytes"
+	"net/http"
+
 	"github.com/fojnk/Task-Test-devBack/internal/models"
 	"github.com/fojnk/Task-Test-devBack/internal/repository"
+	"github.com/fojnk/Task-Test-devBack/internal/service/auth"
+	"github.com/fojnk/Task-Test-devBack/internal/service/manga"
 )
 
 type Authorization interface {
@@ -14,12 +19,20 @@ type Authorization interface {
 	ParseToken(string) (int, string, error)
 }
 
+type MangaService interface {
+	GetChaptersList(w http.ResponseWriter, r *http.Request)
+	DownloadManga(w http.ResponseWriter, r *http.Request)
+	GetMangaList() (bytes.Buffer, error)
+}
+
 type Service struct {
 	Authorization
+	MangaService
 }
 
 func NewService(repos *repository.Respository) *Service {
 	return &Service{
-		Authorization: NewAuthService(repos.Authorization),
+		Authorization: auth.NewAuthService(repos.Authorization),
+		MangaService:  manga.NewMangaService(),
 	}
 }

@@ -32,6 +32,11 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	api := router.Group("/api/v1", h.userIdentity)
 	{
 		api.GET("/account", h.getAccountInfo)
+
+		manga := api.Group("/manga")
+		{
+			manga.GET("/list", h.getManga)
+		}
 	}
 
 	return router

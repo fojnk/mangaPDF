@@ -1,9 +1,11 @@
 package mangalib
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"log/slog"
+	"net/http"
 	"os"
 	"path"
 	"regexp"
@@ -12,12 +14,15 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/aki237/nscjar"
 	"github.com/cavaliergopher/grab/v3"
 	"github.com/fojnk/Task-Test-devBack/configs"
 	"github.com/fojnk/Task-Test-devBack/internal/models"
 	"github.com/fojnk/Task-Test-devBack/internal/service/history"
 	"github.com/fojnk/Task-Test-devBack/internal/service/pdf"
 	"github.com/fojnk/Task-Test-devBack/pkg/tools"
+	"github.com/goware/urlx"
+	"github.com/headzoo/surf"
 )
 
 type ChaptersRawData struct {
@@ -46,6 +51,78 @@ type Info struct {
 		Compress  string `json:"compress"`
 		Fourth    string `json:"fourth"`
 	} `json:"servers"`
+}
+
+func GetMangaFromApi(apiURL string) (bytes.Buffer, error) {
+	var body bytes.Buffer
+	bow := surf.NewBrowser()
+	bow.SetUserAgent(configs.Cfg.UserAgent)
+
+	url, _ := urlx.Parse(apiURL)
+	host, _, _ := urlx.SplitHostPort(url)
+
+	cookieFile := host + ".txt"
+
+	useProxy := false
+
+	if tools.CheckSource(configs.Cfg.CurrentURLs.MangaLib, host) {
+		useProxy = configs.Cfg.Proxy.Use.Mangalib
+	}
+
+	if useProxy {
+		proxyUrl, err := url.Parse(configs.Cfg.Proxy.Type + "://" + configs.Cfg.Proxy.Addr + ":" + configs.Cfg.Proxy.Port)
+		slog.Info(
+			"Используется прокси",
+			slog.String("Server", proxyUrl.String()),
+		)
+		if err != nil {
+			return *bytes.NewBuffer([]byte{}), err
+		}
+
+		bow.SetTransport(&http.Transport{Proxy: http.ProxyURL(proxyUrl)})
+	}
+
+	if tools.IsFileExist(cookieFile) {
+		f, err := os.Open(cookieFile)
+		if err != nil {
+			return *bytes.NewBuffer([]byte{}), err
+		}
+
+		jar := nscjar.Parser{}
+
+		cookies, err := jar.Unmarshal(f)
+		if err != nil {
+			return *bytes.NewBuffer([]byte{}), err
+		}
+
+		url, _ := urlx.Parse(apiURL)
+
+		bow.CookieJar().SetCookies(url, cookies)
+	}
+
+	err := bow.Open(apiURL)
+	if err != nil {
+		slog.Error(
+			"Ошибка при инициализации запроса",
+			slog.String("Message", err.Error()),
+		)
+		return *bytes.NewBuffer([]byte{}), err
+	}
+
+	_, err = bow.Download(&body)
+	if err != nil {
+		slog.Error(
+			"Ошибка при выполнении запроса",
+			slog.String("Message", err.Error()),
+		)
+		return *bytes.NewBuffer([]byte{}), err
+	}
+
+	return body, nil
+}
+
+func GetMangaList() (bytes.Buffer, error) {
+	return GetMangaFromApi("https://mangalib.me/api/manga")
 }
 
 func GetMangaInfo(mangaURL string) (models.MangaInfo, error) {
