@@ -1,4 +1,5 @@
 import com.example.mangapdf.api.ApiService
+import com.example.mangapdf.utils.AuthInterceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -14,6 +15,7 @@ object RetrofitInstance {
         }
 
         return OkHttpClient.Builder()
+            .addInterceptor(AuthInterceptor())
             .addInterceptor(loggingInterceptor)
             .build()
     }
@@ -21,9 +23,10 @@ object RetrofitInstance {
     val api: ApiService by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .client(getHttpClient())  // Add the logging interceptor here
+            .client(getHttpClient())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ApiService::class.java)
     }
+
 }

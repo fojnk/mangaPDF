@@ -12,7 +12,7 @@ class UserRepository {
     /**
      * Полчение ip адреса
      */
-    private fun getLocalIpAddress(): String? {
+    public fun getLocalIpAddress(): String? {
         try {
             val networkInterfaces = NetworkInterface.getNetworkInterfaces()
             while (networkInterfaces.hasMoreElements()) {

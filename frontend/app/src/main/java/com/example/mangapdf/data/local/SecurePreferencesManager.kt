@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 
+
 object SecurePreferencesManager {
 
     private const val NAME = "secure_prefs"
