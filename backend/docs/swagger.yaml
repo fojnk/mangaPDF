@@ -66,10 +66,48 @@ paths:
       summary: Get Account Ingo
       tags:
       - Account
+  /api/v1/manga/chapters:
+    get:
+      description: Get Manga Chapters
+      operationId: manga-chapters
+      parameters:
+      - description: manga_id
+        in: query
+        name: manga_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Manga Chapters
+      tags:
+      - Manga
   /api/v1/manga/list:
     get:
       description: Get Manga List
-      operationId: magna
+      operationId: manga
       produces:
       - application/json
       responses:

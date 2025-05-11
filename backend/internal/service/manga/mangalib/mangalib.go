@@ -9,7 +9,6 @@ import (
 	"os"
 	"path"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -18,7 +17,6 @@ import (
 	"github.com/cavaliergopher/grab/v3"
 	"github.com/fojnk/Task-Test-devBack/configs"
 	"github.com/fojnk/Task-Test-devBack/internal/models"
-	"github.com/fojnk/Task-Test-devBack/internal/service/history"
 	"github.com/fojnk/Task-Test-devBack/internal/service/pdf"
 	"github.com/fojnk/Task-Test-devBack/pkg/tools"
 	"github.com/goware/urlx"
@@ -26,13 +24,11 @@ import (
 )
 
 type ChaptersRawData struct {
-	Chapters struct {
-		List []struct {
-			ChapterName   string `json:"chapter_name"`
-			ChapterNumber string `json:"chapter_number"`
-			ChapterVolume int    `json:"chapter_volume"`
-		} `json:"list"`
-	} `json:"chapters"`
+	List []struct {
+		ChapterName   string `json:"name"`
+		ChapterNumber string `json:"number"`
+		ChapterVolume string `json:"volume"`
+	} `json:"data"`
 }
 
 type PagesList []struct {
@@ -53,7 +49,7 @@ type Info struct {
 	} `json:"servers"`
 }
 
-func GetMangaFromApi(apiURL string) (bytes.Buffer, error) {
+func GetInfoFromApi(apiURL string) (bytes.Buffer, error) {
 	var body bytes.Buffer
 	bow := surf.NewBrowser()
 	bow.SetUserAgent(configs.Cfg.UserAgent)
@@ -122,7 +118,22 @@ func GetMangaFromApi(apiURL string) (bytes.Buffer, error) {
 }
 
 func GetMangaList() (bytes.Buffer, error) {
-	return GetMangaFromApi("https://mangalib.me/api/manga")
+	return GetInfoFromApi("https://mangalib.me/api/manga")
+}
+
+func GetChaptersListFromApi(mangaName string) (ChaptersRawData, error) {
+	data, err := GetInfoFromApi("https://mangalib.me/api/manga/" + mangaName + "/chapters")
+	var chapters ChaptersRawData
+
+	if err != nil {
+		return ChaptersRawData{}, err
+	}
+
+	if err := json.Unmarshal(data.Bytes(), &chapters); err != nil {
+		return ChaptersRawData{}, err
+	}
+
+	return chapters, nil
 }
 
 func GetMangaInfo(mangaURL string) (models.MangaInfo, error) {
@@ -151,150 +162,114 @@ func GetMangaInfo(mangaURL string) (models.MangaInfo, error) {
 	return mangaInfo, nil
 }
 
-func GetChaptersList(mangaURL string) ([]models.ChaptersList, error) {
-	var err error
-	var chaptersList []models.ChaptersList
-	dataRE := regexp.MustCompile(`(?i)window.__DATA__ = {.+};`)
+// func DownloadManga(downData models.DownloadOpts) error {
+// 	var err error
+// 	var chaptersList []models.ChaptersList
+// 	var saveChapters []string
+// 	savedFilesByVol := make(map[string][]string)
 
-	body, err := tools.GetPageCF(mangaURL)
-	if err != nil {
-		return chaptersList, err
-	}
+// 	switch downData.Type {
+// 	case "all":
+// 		chaptersList, err = GetChaptersListFromApi(downData.MangaURL)
+// 		if err != nil {
+// 			slog.Error(
+// 				"Ошибка при получении списка глав",
+// 				slog.String("Message", err.Error()),
+// 			)
+// 			return err
+// 		}
+// 		time.Sleep(1 * time.Second)
+// 	case "chapters":
+// 		chaptersRaw := strings.Split(strings.Trim(downData.Chapters, "[] \""), "\",\"")
+// 		for _, ch := range chaptersRaw {
+// 			chapter := models.ChaptersList{
+// 				Path: ch,
+// 			}
+// 			chaptersList = append(chaptersList, chapter)
+// 		}
+// 	}
 
-	buf := new(strings.Builder)
-	_, err = io.Copy(buf, body)
-	if err != nil {
-		return chaptersList, err
-	}
+// 	chaptersTotal := len(chaptersList)
+// 	chaptersCur := 0
 
-	rawData := strings.Trim(dataRE.FindString(buf.String()), "window.__DATA__ = ;")
+// 	models.WSChan <- models.WSData{
+// 		Cmd: "initProgress",
+// 		Payload: map[string]interface{}{
+// 			"valNow": 0,
+// 			"valMax": chaptersTotal,
+// 			"width":  0,
+// 		},
+// 	}
 
-	chaptersRawData := ChaptersRawData{}
-	err = json.Unmarshal([]byte(rawData), &chaptersRawData)
-	if err != nil {
-		return chaptersList, err
-	}
+// 	for _, chapter := range chaptersList {
+// 		volume := strings.Split(chapter.Path, "/")[0]
 
-	for _, ch := range chaptersRawData.Chapters.List {
-		chapter := models.ChaptersList{
-			Title: "(" + strconv.Itoa(ch.ChapterVolume) + "-" + ch.ChapterNumber + ") " + ch.ChapterName,
-			Path:  "v" + strconv.Itoa(ch.ChapterVolume) + "/c" + ch.ChapterNumber,
-		}
+// 		chSavedFiles, err := DownloadChapter(downData, chapter)
+// 		if err != nil {
+// 			models.WSChan <- models.WSData{
+// 				Cmd: "updateLog",
+// 				Payload: map[string]interface{}{
+// 					"type": "err",
+// 					"text": "-- Ошибка при скачивании главы:" + err.Error(),
+// 				},
+// 			}
+// 		}
 
-		chaptersList = append(chaptersList, chapter)
-	}
+// 		savedFilesByVol[volume] = append(savedFilesByVol[volume], chSavedFiles...)
 
-	return tools.ReverseList(chaptersList), nil
-}
+// 		chaptersCur++
 
-func DownloadManga(downData models.DownloadOpts) error {
-	var err error
-	var chaptersList []models.ChaptersList
-	var saveChapters []string
-	savedFilesByVol := make(map[string][]string)
+// 		saveChapters = append(saveChapters, chapter.Path)
 
-	switch downData.Type {
-	case "all":
-		chaptersList, err = GetChaptersList(downData.MangaURL)
-		if err != nil {
-			slog.Error(
-				"Ошибка при получении списка глав",
-				slog.String("Message", err.Error()),
-			)
-			return err
-		}
-		time.Sleep(1 * time.Second)
-	case "chapters":
-		chaptersRaw := strings.Split(strings.Trim(downData.Chapters, "[] \""), "\",\"")
-		for _, ch := range chaptersRaw {
-			chapter := models.ChaptersList{
-				Path: ch,
-			}
-			chaptersList = append(chaptersList, chapter)
-		}
-	}
+// 		time.Sleep(time.Duration(configs.Cfg.Mangalib.TimeoutChapter) * time.Millisecond)
 
-	chaptersTotal := len(chaptersList)
-	chaptersCur := 0
+// 		models.WSChan <- models.WSData{
+// 			Cmd: "updateProgress",
+// 			Payload: map[string]interface{}{
+// 				"valNow": chaptersCur,
+// 				"width":  tools.GetPercent(chaptersCur, chaptersTotal),
+// 			},
+// 		}
+// 	}
 
-	models.WSChan <- models.WSData{
-		Cmd: "initProgress",
-		Payload: map[string]interface{}{
-			"valNow": 0,
-			"valMax": chaptersTotal,
-			"width":  0,
-		},
-	}
+// 	chapterPath := path.Join(configs.Cfg.Savepath, downData.SavePath)
 
-	for _, chapter := range chaptersList {
-		volume := strings.Split(chapter.Path, "/")[0]
+// 	if downData.PDFvol == "1" {
+// 		models.WSChan <- models.WSData{
+// 			Cmd: "updateLog",
+// 			Payload: map[string]interface{}{
+// 				"type": "std",
+// 				"text": "Создаю PDF для томов",
+// 			},
+// 		}
 
-		chSavedFiles, err := DownloadChapter(downData, chapter)
-		if err != nil {
-			models.WSChan <- models.WSData{
-				Cmd: "updateLog",
-				Payload: map[string]interface{}{
-					"type": "err",
-					"text": "-- Ошибка при скачивании главы:" + err.Error(),
-				},
-			}
-		}
+// 		pdf.CreateVolPDF(chapterPath, savedFilesByVol, downData.Del)
+// 	}
 
-		savedFilesByVol[volume] = append(savedFilesByVol[volume], chSavedFiles...)
+// 	if downData.PDFall == "1" {
+// 		models.WSChan <- models.WSData{
+// 			Cmd: "updateLog",
+// 			Payload: map[string]interface{}{
+// 				"type": "std",
+// 				"text": "Создаю PDF для манги",
+// 			},
+// 		}
 
-		chaptersCur++
+// 		pdf.CreateMangaPdf(chapterPath, savedFilesByVol, downData.Del)
+// 	}
 
-		saveChapters = append(saveChapters, chapter.Path)
+// 	mangaID := tools.GetMD5(downData.MangaURL)
+// 	history.SaveHistory(mangaID, saveChapters)
 
-		time.Sleep(time.Duration(configs.Cfg.Mangalib.TimeoutChapter) * time.Millisecond)
+// 	models.WSChan <- models.WSData{
+// 		Cmd: "downloadComplete",
+// 		Payload: map[string]interface{}{
+// 			"text": "Скачивание завершено!",
+// 		},
+// 	}
 
-		models.WSChan <- models.WSData{
-			Cmd: "updateProgress",
-			Payload: map[string]interface{}{
-				"valNow": chaptersCur,
-				"width":  tools.GetPercent(chaptersCur, chaptersTotal),
-			},
-		}
-	}
-
-	chapterPath := path.Join(configs.Cfg.Savepath, downData.SavePath)
-
-	if downData.PDFvol == "1" {
-		models.WSChan <- models.WSData{
-			Cmd: "updateLog",
-			Payload: map[string]interface{}{
-				"type": "std",
-				"text": "Создаю PDF для томов",
-			},
-		}
-
-		pdf.CreateVolPDF(chapterPath, savedFilesByVol, downData.Del)
-	}
-
-	if downData.PDFall == "1" {
-		models.WSChan <- models.WSData{
-			Cmd: "updateLog",
-			Payload: map[string]interface{}{
-				"type": "std",
-				"text": "Создаю PDF для манги",
-			},
-		}
-
-		pdf.CreateMangaPdf(chapterPath, savedFilesByVol, downData.Del)
-	}
-
-	mangaID := tools.GetMD5(downData.MangaURL)
-	history.SaveHistory(mangaID, saveChapters)
-
-	models.WSChan <- models.WSData{
-		Cmd: "downloadComplete",
-		Payload: map[string]interface{}{
-			"text": "Скачивание завершено!",
-		},
-	}
-
-	return nil
-}
+// 	return nil
+// }
 
 func DownloadChapter(downData models.DownloadOpts, curChapter models.ChaptersList) ([]string, error) {
 	var err error

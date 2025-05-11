@@ -36,6 +36,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		manga := api.Group("/manga")
 		{
 			manga.GET("/list", h.getManga)
+			manga.GET("/chapters", h.getMangaChapters)
 		}
 	}
 
