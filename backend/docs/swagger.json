@@ -58,6 +58,65 @@
                 }
             }
         },
+        "/api/v1/manga/chapters": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get Manga Chapters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Manga"
+                ],
+                "summary": "Get Manga Chapters",
+                "operationId": "manga-chapters",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "manga_id",
+                        "name": "manga_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/manga/list": {
             "get": {
                 "security": [
@@ -73,7 +132,7 @@
                     "Manga"
                 ],
                 "summary": "Get Manga List",
-                "operationId": "magna",
+                "operationId": "manga",
                 "responses": {
                     "200": {
                         "description": "OK",

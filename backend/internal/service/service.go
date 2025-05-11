@@ -2,7 +2,6 @@ package service
 
 import (
 	"bytes"
-	"net/http"
 
 	"github.com/fojnk/Task-Test-devBack/internal/models"
 	"github.com/fojnk/Task-Test-devBack/internal/repository"
@@ -20,8 +19,8 @@ type Authorization interface {
 }
 
 type MangaService interface {
-	GetChaptersList(w http.ResponseWriter, r *http.Request)
-	DownloadManga(w http.ResponseWriter, r *http.Request)
+	GetChaptersList(mangaUrl string) (string, error)
+	//DownloadManga(downloadOpts models.DownloadOpts, mangaUrl string) string
 	GetMangaList() (bytes.Buffer, error)
 }
 
