@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"log/slog"
 	"math/rand"
 	"os"
@@ -28,11 +29,67 @@ type ServersList []struct {
 	Res  bool   `json:"res"`
 }
 
-func GetMangaInfo(mangaURL string) (models.MangaInfo, error) {
+const baseServerUrl = "https://t.readmanga.io/"
+
+func GetMangaList() ([]models.Manga, error) {
+	var err error
+
+	pageBody, err := tools.GetPageCF("https://t.readmanga.io/list")
+	if err != nil {
+		return []models.Manga{}, err
+	}
+
+	doc, err := goquery.NewDocumentFromReader(pageBody)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var mangas []models.Manga
+
+	doc.Find(".tile").Each(func(i int, s *goquery.Selection) {
+		title := s.Find("h3 a").AttrOr("title", "")
+		rating := s.Find(".compact-rate").AttrOr("title", "")
+
+		id := ""
+		s.Find("a").EachWithBreak(func(_ int, a *goquery.Selection) bool {
+			href, exists := a.Attr("href")
+			if exists && strings.HasPrefix(href, "/") {
+				id = strings.TrimPrefix(href, "/")
+				return false
+			}
+			return true
+		})
+
+		img := ""
+		imgSel := s.Find("img")
+		img, _ = imgSel.Attr("data-original")
+		if img == "" {
+			img, _ = imgSel.Attr("src")
+		}
+
+		desc := s.Find(".manga-description").Text()
+		desc = strings.TrimSpace(desc)
+
+		if title != "" && id != "" {
+			manga := models.Manga{
+				Title:       title,
+				Id:          id,
+				Image:       img,
+				Rating:      rating,
+				Description: desc,
+			}
+			mangas = append(mangas, manga)
+		}
+	})
+
+	return mangas, nil
+}
+
+func GetMangaInfo(mangaName string) (models.MangaInfo, error) {
 	var err error
 	var mangaInfo models.MangaInfo
 
-	pageBody, err := tools.GetPageCF(mangaURL)
+	pageBody, err := tools.GetPageCF(baseServerUrl + mangaName)
 	if err != nil {
 		return mangaInfo, err
 	}
@@ -58,7 +115,7 @@ func GetMangaInfo(mangaURL string) (models.MangaInfo, error) {
 	return mangaInfo, nil
 }
 
-func GetChaptersList(mangaURL string) ([]models.ChaptersList, []models.RMTranslators, bool, string, error) {
+func GetChaptersList(mangaName string) ([]models.ChaptersList, []models.RMTranslators, bool, string, error) {
 	var err error
 	var chaptersList []models.ChaptersList
 	var transList []models.RMTranslators
@@ -66,7 +123,7 @@ func GetChaptersList(mangaURL string) ([]models.ChaptersList, []models.RMTransla
 
 	isMtr := false
 
-	pageBody, err := tools.GetPageCF(mangaURL)
+	pageBody, err := tools.GetPageCF(baseServerUrl + mangaName)
 	if err != nil {
 		return chaptersList, transList, isMtr, "", err
 	}

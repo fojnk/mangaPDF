@@ -117,6 +117,74 @@
                 }
             }
         },
+        "/api/v1/manga/download": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Download Manga Chapters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Manga"
+                ],
+                "summary": "Download Manga",
+                "operationId": "manga-download",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "manga_id",
+                        "name": "manga_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "download_opt",
+                        "name": "downloadOps",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.DownloadOpts"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/manga/list": {
             "get": {
                 "security": [
@@ -364,6 +432,47 @@
         }
     },
     "definitions": {
+        "models.DownloadOpts": {
+            "type": "object",
+            "properties": {
+                "cbz": {
+                    "type": "string"
+                },
+                "chapters": {
+                    "type": "string"
+                },
+                "del": {
+                    "type": "string"
+                },
+                "mangaURL": {
+                    "type": "string"
+                },
+                "mtr": {
+                    "type": "boolean"
+                },
+                "pdfall": {
+                    "type": "string"
+                },
+                "pdfch": {
+                    "type": "string"
+                },
+                "pdfvol": {
+                    "type": "string"
+                },
+                "prefTrans": {
+                    "type": "string"
+                },
+                "savePath": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "userHash": {
+                    "type": "string"
+                }
+            }
+        },
         "transport.InputLogin": {
             "type": "object",
             "properties": {
