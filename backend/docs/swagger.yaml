@@ -1,5 +1,32 @@
 basePath: /
 definitions:
+  models.DownloadOpts:
+    properties:
+      cbz:
+        type: string
+      chapters:
+        type: string
+      del:
+        type: string
+      mangaURL:
+        type: string
+      mtr:
+        type: boolean
+      pdfall:
+        type: string
+      pdfch:
+        type: string
+      pdfvol:
+        type: string
+      prefTrans:
+        type: string
+      savePath:
+        type: string
+      type:
+        type: string
+      userHash:
+        type: string
+    type: object
   transport.InputLogin:
     properties:
       password:
@@ -102,6 +129,50 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get Manga Chapters
+      tags:
+      - Manga
+  /api/v1/manga/download:
+    get:
+      description: Download Manga Chapters
+      operationId: manga-download
+      parameters:
+      - description: manga_id
+        in: query
+        name: manga_id
+        required: true
+        type: string
+      - description: download_opt
+        in: body
+        name: downloadOps
+        required: true
+        schema:
+          $ref: '#/definitions/models.DownloadOpts'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+      security:
+      - ApiKeyAuth: []
+      summary: Download Manga
       tags:
       - Manga
   /api/v1/manga/list:

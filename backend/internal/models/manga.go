@@ -10,6 +10,14 @@ type ChaptersList struct {
 	Path  string `json:"path"`
 }
 
+type Manga struct {
+	Id          string `json:"id"`
+	Title       string `json:"title"`
+	Image       string `json:"image"`
+	Rating      string `json:"rating"`
+	Description string `json:"description"`
+}
+
 type RMTranslators struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`

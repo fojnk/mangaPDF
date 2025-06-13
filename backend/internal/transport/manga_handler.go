@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/fojnk/Task-Test-devBack/internal/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,13 +27,7 @@ func (h *Handler) getManga(c *gin.Context) {
 		return
 	}
 
-	var js map[string]interface{}
-	if err := json.Unmarshal(resp.Bytes(), &js); err != nil {
-		NewTransportErrorResponse(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	c.JSON(http.StatusOK, js)
+	c.JSON(http.StatusOK, resp)
 }
 
 // @Summary Get Manga Chapters
@@ -64,4 +59,32 @@ func (h *Handler) getMangaChapters(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, js)
+}
+
+// @Summary Download Manga
+// @Security ApiKeyAuth
+// @Tags Manga
+// @Description Download Manga Chapters
+// @ID manga-download
+// @Param manga_id query string true "manga_id"
+// @Param downloadOps body models.DownloadOpts true "download_opt"
+// @Produce  json
+// @Success 200 {integer} integer 1
+// @Failure 400,404 {object} transort_error
+// @Failure 500 {object} transort_error
+// @Failure default {object} transort_error
+// @Router /api/v1/manga/download [get]
+func (h *Handler) downloadMangaChapters(c *gin.Context) {
+	mangaId := c.Query("manga_id")
+
+	var input models.DownloadOpts
+
+	if err := c.BindJSON(&input); err != nil {
+		NewTransportErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	out := h.services.MangaService.DownloadManga(input, mangaId)
+
+	c.JSON(http.StatusOK, out)
 }

@@ -1,8 +1,6 @@
 package service
 
 import (
-	"bytes"
-
 	"github.com/fojnk/Task-Test-devBack/internal/models"
 	"github.com/fojnk/Task-Test-devBack/internal/repository"
 	"github.com/fojnk/Task-Test-devBack/internal/service/auth"
@@ -20,8 +18,8 @@ type Authorization interface {
 
 type MangaService interface {
 	GetChaptersList(mangaUrl string) (string, error)
-	//DownloadManga(downloadOpts models.DownloadOpts, mangaUrl string) string
-	GetMangaList() (bytes.Buffer, error)
+	DownloadManga(downloadOpts models.DownloadOpts, mangaUrl string) string
+	GetMangaList() ([]models.Manga, error)
 }
 
 type Service struct {
