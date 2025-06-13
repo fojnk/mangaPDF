@@ -132,7 +132,7 @@ paths:
       tags:
       - Manga
   /api/v1/manga/download:
-    get:
+    post:
       description: Download Manga Chapters
       operationId: manga-download
       parameters:
@@ -205,6 +205,82 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get Manga List
+      tags:
+      - Manga
+  /api/v1/manga/result:
+    get:
+      description: Download Manga Result
+      operationId: manga-download-result
+      parameters:
+      - description: task_id
+        in: query
+        name: task_id
+        required: true
+        type: string
+      produces:
+      - application/pdf
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+      security:
+      - ApiKeyAuth: []
+      summary: Download Manga Result
+      tags:
+      - Manga
+  /api/v1/manga/status:
+    get:
+      description: Download Manga Status
+      operationId: manga-download-status
+      parameters:
+      - description: task_id
+        in: query
+        name: task_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/transport.transort_error'
+      security:
+      - ApiKeyAuth: []
+      summary: Download Manga Status
       tags:
       - Manga
   /auth/login:

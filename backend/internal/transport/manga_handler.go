@@ -6,6 +6,7 @@ import (
 
 	"github.com/fojnk/Task-Test-devBack/internal/models"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 // @Summary Get Manga List
@@ -73,7 +74,7 @@ func (h *Handler) getMangaChapters(c *gin.Context) {
 // @Failure 400,404 {object} transort_error
 // @Failure 500 {object} transort_error
 // @Failure default {object} transort_error
-// @Router /api/v1/manga/download [get]
+// @Router /api/v1/manga/download [post]
 func (h *Handler) downloadMangaChapters(c *gin.Context) {
 	mangaId := c.Query("manga_id")
 
@@ -84,7 +85,65 @@ func (h *Handler) downloadMangaChapters(c *gin.Context) {
 		return
 	}
 
-	out := h.services.MangaService.DownloadManga(input, mangaId)
+	out := h.services.TaskService.CreateTask(input, mangaId)
 
 	c.JSON(http.StatusOK, out)
+}
+
+// @Summary Download Manga Status
+// @Security ApiKeyAuth
+// @Tags Manga
+// @Description Download Manga Status
+// @ID manga-download-status
+// @Param task_id query string true "task_id"
+// @Produce  json
+// @Success 200 {integer} integer 1
+// @Failure 400,404 {object} transort_error
+// @Failure 500 {object} transort_error
+// @Failure default {object} transort_error
+// @Router /api/v1/manga/status [get]
+func (h *Handler) downloadStatus(c *gin.Context) {
+	taskId := c.Query("task_id")
+	status, ok := h.services.TaskService.GetStatus(taskId)
+
+	logrus.Info(status)
+
+	if ok {
+		c.JSON(http.StatusOK, status)
+	} else {
+		c.JSON(http.StatusNotFound, "task not found")
+	}
+}
+
+// @Summary Download Manga Result
+// @Security ApiKeyAuth
+// @Tags Manga
+// @Description Download Manga Result
+// @ID manga-download-result
+// @Param task_id query string true "task_id"
+// @Produce application/pdf
+// @Success 200 {integer} integer 1
+// @Failure 400,404 {object} transort_error
+// @Failure 500 {object} transort_error
+// @Failure default {object} transort_error
+// @Router /api/v1/manga/result [get]
+func (h *Handler) downloadResult(c *gin.Context) {
+	taskId := c.Query("task_id")
+
+	status, ok := h.services.TaskService.GetStatus(taskId)
+
+	logrus.Info(status)
+
+	if ok {
+		if status.Status != "ready" {
+			c.JSON(http.StatusAccepted, gin.H{"error": "not ready"})
+			return
+		}
+
+		c.Header("Content-Type", "application/pdf")
+		c.Header("Content-Disposition", "attachment; filename=\"result.pdf\"")
+		c.File(status.File)
+	} else {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+	}
 }

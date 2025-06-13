@@ -18,7 +18,6 @@ import (
 	"github.com/cavaliergopher/grab/v3"
 	"github.com/fojnk/Task-Test-devBack/configs"
 	"github.com/fojnk/Task-Test-devBack/internal/models"
-	"github.com/fojnk/Task-Test-devBack/internal/service/history"
 	"github.com/fojnk/Task-Test-devBack/internal/service/pdf"
 	"github.com/fojnk/Task-Test-devBack/pkg/tools"
 	"github.com/goware/urlx"
@@ -29,7 +28,7 @@ type ServersList []struct {
 	Res  bool   `json:"res"`
 }
 
-const baseServerUrl = "https://t.readmanga.io/"
+const baseServerUrl = "https://t.readmanga.io"
 
 func GetMangaList() ([]models.Manga, error) {
 	var err error
@@ -123,7 +122,7 @@ func GetChaptersList(mangaName string) ([]models.ChaptersList, []models.RMTransl
 
 	isMtr := false
 
-	pageBody, err := tools.GetPageCF(baseServerUrl + mangaName)
+	pageBody, err := tools.GetPageCF(baseServerUrl + "/" + mangaName)
 	if err != nil {
 		return chaptersList, transList, isMtr, "", err
 	}
@@ -192,7 +191,7 @@ func GetChaptersList(mangaName string) ([]models.ChaptersList, []models.RMTransl
 	return tools.ReverseList(chaptersList), transList, isMtr, userHash, nil
 }
 
-func DownloadManga(downData models.DownloadOpts) error {
+func DownloadManga(downData models.DownloadOpts) (string, error) {
 	var err error
 	var chaptersList []models.ChaptersList
 	var saveChapters []string
@@ -206,7 +205,7 @@ func DownloadManga(downData models.DownloadOpts) error {
 				"Ошибка при получении списка глав",
 				slog.String("Message", err.Error()),
 			)
-			return err
+			return "", err
 		}
 		time.Sleep(1 * time.Second)
 	case "chapters":
@@ -245,7 +244,7 @@ func DownloadManga(downData models.DownloadOpts) error {
 					},
 				}
 
-				return nil
+				return "", nil
 			} else {
 				models.WSChan <- models.WSData{
 					Cmd: "updateLog",
@@ -276,17 +275,17 @@ func DownloadManga(downData models.DownloadOpts) error {
 
 	chapterPath := path.Join(configs.Cfg.Savepath, downData.SavePath)
 
-	if downData.PDFvol == "1" {
-		models.WSChan <- models.WSData{
-			Cmd: "updateLog",
-			Payload: map[string]interface{}{
-				"type": "std",
-				"text": "Создаю PDF для томов",
-			},
-		}
+	// if downData.PDFvol == "1" {
+	// 	models.WSChan <- models.WSData{
+	// 		Cmd: "updateLog",
+	// 		Payload: map[string]interface{}{
+	// 			"type": "std",
+	// 			"text": "Создаю PDF для томов",
+	// 		},
+	// 	}
 
-		pdf.CreateVolPDF(chapterPath, savedFilesByVol, downData.Del)
-	}
+	// 	pdf.CreateVolPDF(chapterPath, savedFilesByVol, downData.Del)
+	// }
 
 	if downData.PDFall == "1" {
 		models.WSChan <- models.WSData{
@@ -300,9 +299,6 @@ func DownloadManga(downData models.DownloadOpts) error {
 		pdf.CreateMangaPdf(chapterPath, savedFilesByVol, downData.Del)
 	}
 
-	mangaID := tools.GetMD5(downData.MangaURL)
-	history.SaveHistory(mangaID, saveChapters)
-
 	models.WSChan <- models.WSData{
 		Cmd: "downloadComplete",
 		Payload: map[string]interface{}{
@@ -310,7 +306,7 @@ func DownloadManga(downData models.DownloadOpts) error {
 		},
 	}
 
-	return nil
+	return chapterPath + ".pdf", nil
 }
 
 func DownloadChapter(downData models.DownloadOpts, curChapter models.ChaptersList) ([]string, error) {
@@ -324,7 +320,7 @@ func DownloadChapter(downData models.DownloadOpts, curChapter models.ChaptersLis
 		},
 	}
 
-	chapterURL := strings.TrimRight(downData.MangaURL, "/") + "/" + curChapter.Path
+	chapterURL := baseServerUrl + "/" + downData.MangaURL + "/" + curChapter.Path
 
 	var imageLinks []string
 
@@ -397,7 +393,7 @@ func DownloadChapter(downData models.DownloadOpts, curChapter models.ChaptersLis
 		return nil, errors.New("noauth")
 	}
 
-	r := regexp.MustCompile(`rm_h\.readerDoInit\(\[\[(.+)\]\],\s(false|true),\s(\[.+\]).+\);`)
+	r := regexp.MustCompile(`rm_h\.readerInit\(\[\[(.+)\]\],\s(false|true),\s(\[.+\]).+\);`)
 
 	srvList := ServersList{}
 
@@ -495,6 +491,8 @@ func DlImage(imgURL, chapterPath string, srvList ServersList, retry int) (string
 	if host == "one-way.work" {
 		imgURL = strings.Split(imgURL, "?")[0]
 	}
+
+	imgURL = baseServerUrl + imgURL
 
 	req, err := grab.NewRequest(chapterPath, imgURL)
 	if err != nil {

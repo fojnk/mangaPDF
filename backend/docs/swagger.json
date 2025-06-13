@@ -118,7 +118,7 @@
             }
         },
         "/api/v1/manga/download": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -201,6 +201,124 @@
                 ],
                 "summary": "Get Manga List",
                 "operationId": "manga",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/manga/result": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Download Manga Result",
+                "produces": [
+                    "application/pdf"
+                ],
+                "tags": [
+                    "Manga"
+                ],
+                "summary": "Download Manga Result",
+                "operationId": "manga-download-result",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task_id",
+                        "name": "task_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/transport.transort_error"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/manga/status": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Download Manga Status",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Manga"
+                ],
+                "summary": "Download Manga Status",
+                "operationId": "manga-download-status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task_id",
+                        "name": "task_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
