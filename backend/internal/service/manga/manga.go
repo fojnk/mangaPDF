@@ -6,11 +6,8 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/fojnk/Task-Test-devBack/configs"
 	"github.com/fojnk/Task-Test-devBack/internal/models"
 	"github.com/fojnk/Task-Test-devBack/internal/service/manga/readmanga"
-	"github.com/fojnk/Task-Test-devBack/pkg/tools"
-	"github.com/goware/urlx"
 )
 
 type MangaService struct {
@@ -66,21 +63,9 @@ func (m *MangaService) GetChaptersList(mangaUrl string) (string, error) {
 	return string(respData), nil
 }
 
-func (m *MangaService) DownloadManga(downloadOpts models.DownloadOpts, mangaUrl string) string {
-	url, _ := urlx.Parse(mangaUrl)
-	host, _, _ := urlx.SplitHostPort(url)
+func (m *MangaService) DownloadManga(downloadOpts models.DownloadOpts, mangaUrl string) (string, error) {
+	downloadOpts.MangaURL = mangaUrl
+	downloadOpts.SavePath = mangaUrl
 
-	downloadOpts.MangaURL = strings.Split(url.String(), "?")[0]
-	downloadOpts.SavePath = strings.Trim(url.Path, "/")
-
-	if tools.CheckSource(configs.Cfg.CurrentURLs.MangaLib, host) {
-		go readmanga.DownloadManga(downloadOpts)
-	}
-
-	resp := make(map[string]interface{})
-	resp["status"] = "OK"
-
-	respData, _ := json.Marshal(resp)
-
-	return string(respData)
+	return readmanga.DownloadManga(downloadOpts)
 }

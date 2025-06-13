@@ -18,18 +18,26 @@ type Authorization interface {
 
 type MangaService interface {
 	GetChaptersList(mangaUrl string) (string, error)
-	DownloadManga(downloadOpts models.DownloadOpts, mangaUrl string) string
+	DownloadManga(downloadOpts models.DownloadOpts, mangaUrl string) (string, error)
 	GetMangaList() ([]models.Manga, error)
+}
+
+type TaskService interface {
+	CreateTask(input models.DownloadOpts, mangaName string) string
+	GetStatus(taskID string) (TaskStatus, bool)
 }
 
 type Service struct {
 	Authorization
 	MangaService
+	TaskService
 }
 
 func NewService(repos *repository.Respository) *Service {
+	mangaService := manga.NewMangaService()
 	return &Service{
 		Authorization: auth.NewAuthService(repos.Authorization),
-		MangaService:  manga.NewMangaService(),
+		MangaService:  mangaService,
+		TaskService:   NewTastManager(mangaService),
 	}
 }

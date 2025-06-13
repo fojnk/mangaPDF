@@ -37,7 +37,9 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		{
 			manga.GET("/list", h.getManga)
 			manga.GET("/chapters", h.getMangaChapters)
-			manga.GET("/download", h.downloadMangaChapters)
+			manga.POST("/download", h.downloadMangaChapters)
+			manga.GET("/status", h.downloadStatus)
+			manga.GET("/result", h.downloadResult)
 		}
 	}
 
