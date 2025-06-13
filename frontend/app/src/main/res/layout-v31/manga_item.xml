@@ -10,37 +10,40 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="12dp">
 
+        <!-- Миниатюра манги -->
         <ImageView
             android:id="@+id/thumbnail"
             android:layout_width="match_parent"
             android:layout_height="180dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="Обложка манги"
             android:background="@color/imageBackground"
-            android:clipToOutline="true"
-            android:contentDescription="@string/manga_image_desc"
-            android:scaleType="centerCrop" />
+            android:clipToOutline="true" />
 
+        <!-- Название манги -->
         <TextView
             android:id="@+id/title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/manga_name"
-            android:textColor="@color/primaryText"
+            android:text="Название манги"
             android:textSize="18sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="@color/primaryText"
+            android:layout_marginTop="12dp"/>
 
+        <!-- Рейтинг манги -->
         <TextView
             android:id="@+id/rating"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="@string/manga_rate"
+            android:text="Рейтинг: 9.6"
+            android:textSize="14sp"
             android:textColor="@color/secondaryText"
-            android:textSize="14sp" />
+            android:layout_marginTop="6dp"/>
 
     </LinearLayout>
 

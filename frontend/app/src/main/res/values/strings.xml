@@ -1,8 +1,6 @@
 <resources>
     <string name="app_name">Manga PDF</string>
     <string name="title_home">Home</string>
-    <string name="title_dashboard">Dashboard</string>
-    <string name="title_notifications">Notifications</string>
     <string name="login">Login</string>
     <string name="email">Email</string>
     <string name="password">Password</string>
@@ -10,4 +8,15 @@
     <string name="register">Register</string>
     <string name="name">User Name</string>
     <string name="already_have_an_account_login">Already have an account? Login</string>
+    <string name="mangalib">mangalib</string>
+    <string name="readmanga">readmanga</string>
+    <string name="manga_image_desc">Обложка манги</string>
+    <string name="manga_name">Название манги</string>
+    <string name="manga_rate">Рейтинг: 9.6</string>
+    <string name="manga">Манга</string>
+    <string-array name="manga_sources">
+        <item>readmanga</item>
+        <item>mangalib</item>
+    </string-array>
+
 </resources>

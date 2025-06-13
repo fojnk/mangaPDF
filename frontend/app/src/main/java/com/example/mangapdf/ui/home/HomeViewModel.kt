@@ -19,10 +19,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _error = MutableLiveData<String>()
     val error: LiveData<String> get() = _error
 
-    // Загружаем список манги
     fun loadManga() {
         viewModelScope.launch {
-            // Запрос на получение списка манги
             val result = mangaRepository.getMangaList()
             result.onSuccess { mangaList ->
                 _mangaList.value = mangaList

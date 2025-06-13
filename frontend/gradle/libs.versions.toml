@@ -21,7 +21,6 @@ securityCryptoKtxVersion = "1.1.0-alpha07"
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-security-crypto-ktx-v110alpha07 = { module = "androidx.security:security-crypto-ktx", version.ref = "securityCryptoKtxVersion" }
-compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
