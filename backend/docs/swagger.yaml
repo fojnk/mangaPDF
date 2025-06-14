@@ -1,30 +1,12 @@
 basePath: /
 definitions:
-  models.DownloadOpts:
+  transport.DownloadInput:
     properties:
-      cbz:
-        type: string
       chapters:
         type: string
-      del:
-        type: string
-      mangaURL:
-        type: string
-      mtr:
-        type: boolean
-      pdfall:
-        type: string
-      pdfch:
-        type: string
-      pdfvol:
-        type: string
-      prefTrans:
-        type: string
-      savePath:
+      manga_id:
         type: string
       type:
-        type: string
-      userHash:
         type: string
     type: object
   transport.InputLogin:
@@ -136,17 +118,12 @@ paths:
       description: Download Manga Chapters
       operationId: manga-download
       parameters:
-      - description: manga_id
-        in: query
-        name: manga_id
-        required: true
-        type: string
       - description: download_opt
         in: body
         name: downloadOps
         required: true
         schema:
-          $ref: '#/definitions/models.DownloadOpts'
+          $ref: '#/definitions/transport.DownloadInput'
       produces:
       - application/json
       responses:

@@ -142,19 +142,12 @@ const docTemplate = `{
                 "operationId": "manga-download",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "manga_id",
-                        "name": "manga_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
                         "description": "download_opt",
                         "name": "downloadOps",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.DownloadOpts"
+                            "$ref": "#/definitions/transport.DownloadInput"
                         }
                     }
                 ],
@@ -557,43 +550,16 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.DownloadOpts": {
+        "transport.DownloadInput": {
             "type": "object",
             "properties": {
-                "cbz": {
-                    "type": "string"
-                },
                 "chapters": {
                     "type": "string"
                 },
-                "del": {
-                    "type": "string"
-                },
-                "mangaURL": {
-                    "type": "string"
-                },
-                "mtr": {
-                    "type": "boolean"
-                },
-                "pdfall": {
-                    "type": "string"
-                },
-                "pdfch": {
-                    "type": "string"
-                },
-                "pdfvol": {
-                    "type": "string"
-                },
-                "prefTrans": {
-                    "type": "string"
-                },
-                "savePath": {
+                "manga_id": {
                     "type": "string"
                 },
                 "type": {
-                    "type": "string"
-                },
-                "userHash": {
                     "type": "string"
                 }
             }

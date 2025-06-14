@@ -490,9 +490,9 @@ func DlImage(imgURL, chapterPath string, srvList ServersList, retry int) (string
 
 	if host == "one-way.work" {
 		imgURL = strings.Split(imgURL, "?")[0]
+	} else {
+		imgURL = baseServerUrl + imgURL
 	}
-
-	imgURL = baseServerUrl + imgURL
 
 	req, err := grab.NewRequest(chapterPath, imgURL)
 	if err != nil {

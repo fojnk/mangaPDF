@@ -62,13 +62,18 @@ func (h *Handler) getMangaChapters(c *gin.Context) {
 	c.JSON(http.StatusOK, js)
 }
 
+type DownloadInput struct {
+	ChaptersList string `json:"chapters"`
+	MangaName    string `json:"manga_id"`
+	Type         string `json:"type"`
+}
+
 // @Summary Download Manga
 // @Security ApiKeyAuth
 // @Tags Manga
 // @Description Download Manga Chapters
 // @ID manga-download
-// @Param manga_id query string true "manga_id"
-// @Param downloadOps body models.DownloadOpts true "download_opt"
+// @Param downloadOps body DownloadInput true "download_opt"
 // @Produce  json
 // @Success 200 {integer} integer 1
 // @Failure 400,404 {object} transort_error
@@ -76,16 +81,29 @@ func (h *Handler) getMangaChapters(c *gin.Context) {
 // @Failure default {object} transort_error
 // @Router /api/v1/manga/download [post]
 func (h *Handler) downloadMangaChapters(c *gin.Context) {
-	mangaId := c.Query("manga_id")
-
-	var input models.DownloadOpts
+	var input DownloadInput
+	var downloadOpt models.DownloadOpts
 
 	if err := c.BindJSON(&input); err != nil {
 		NewTransportErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	out := h.services.TaskService.CreateTask(input, mangaId)
+	downloadOpt = models.DownloadOpts{
+		Chapters:  input.ChaptersList,
+		MangaURL:  input.MangaName,
+		PDFall:    "1",
+		PDFch:     "0",
+		PDFvol:    "0",
+		Del:       "1",
+		Type:      input.Type,
+		UserHash:  "0",
+		CBZ:       "0",
+		SavePath:  "",
+		PrefTrans: "0",
+	}
+
+	out := h.services.TaskService.CreateTask(downloadOpt, input.MangaName)
 
 	c.JSON(http.StatusOK, out)
 }
