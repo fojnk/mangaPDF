@@ -201,6 +201,15 @@ const docTemplate = `{
                 ],
                 "summary": "Get Manga List",
                 "operationId": "manga",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "offset",
+                        "name": "offset",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -554,7 +563,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "chapters": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "manga_id": {
                     "type": "string"

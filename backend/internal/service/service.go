@@ -19,7 +19,7 @@ type Authorization interface {
 type MangaService interface {
 	GetChaptersList(mangaUrl string) (string, error)
 	DownloadManga(downloadOpts models.DownloadOpts, mangaUrl string) (string, error)
-	GetMangaList() ([]models.Manga, error)
+	GetMangaList(offset int) ([]models.Manga, error)
 }
 
 type TaskService interface {

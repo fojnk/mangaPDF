@@ -17,8 +17,8 @@ func NewMangaService() *MangaService {
 	return &MangaService{}
 }
 
-func (m *MangaService) GetMangaList() ([]models.Manga, error) {
-	return readmanga.GetMangaList()
+func (m *MangaService) GetMangaList(offset int) ([]models.Manga, error) {
+	return readmanga.GetMangaList(offset)
 }
 
 func (m *MangaService) GetChaptersList(mangaUrl string) (string, error) {

@@ -3,7 +3,9 @@ definitions:
   transport.DownloadInput:
     properties:
       chapters:
-        type: string
+        items:
+          type: string
+        type: array
       manga_id:
         type: string
       type:
@@ -156,6 +158,12 @@ paths:
     get:
       description: Get Manga List
       operationId: manga
+      parameters:
+      - description: offset
+        in: query
+        name: offset
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
