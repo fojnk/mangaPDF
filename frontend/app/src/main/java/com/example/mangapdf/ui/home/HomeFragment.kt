@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.mangapdf.databinding.FragmentHomeBinding
 
@@ -26,7 +27,10 @@ class HomeFragment : Fragment() {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        val mangaAdapter = MangaAdapter()
+        val mangaAdapter = MangaAdapter { manga ->
+            val action = HomeFragmentDirections.actionHomeToDetail(manga)
+            findNavController().navigate(action)
+        }
         binding.recyclerView.layoutManager = GridLayoutManager(context, 2)
 
         binding.recyclerView.adapter = mangaAdapter

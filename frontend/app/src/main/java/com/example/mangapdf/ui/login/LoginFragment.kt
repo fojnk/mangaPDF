@@ -41,7 +41,6 @@ class LoginFragment : Fragment() {
             val name = etName.text.toString()
             val password = etPassword.text.toString()
 
-            // Логин на сервере
             loginViewModel.login(name, password)
         }
 

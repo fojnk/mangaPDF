@@ -10,7 +10,8 @@ import com.example.mangapdf.databinding.MangaItemBinding
 import com.bumptech.glide.Glide
 
 
-class MangaAdapter : ListAdapter<Manga, MangaAdapter.MangaViewHolder>(DIFF) {
+class MangaAdapter(private val onItemClick: (Manga) -> Unit
+) : ListAdapter<Manga, MangaAdapter.MangaViewHolder>(DIFF) {
 
     companion object {
         val DIFF = object : DiffUtil.ItemCallback<Manga>() {
@@ -48,6 +49,10 @@ class MangaAdapter : ListAdapter<Manga, MangaAdapter.MangaViewHolder>(DIFF) {
             val layoutParams = binding.root.layoutParams
             layoutParams.width = cardWidth
             binding.root.layoutParams = layoutParams
+
+            binding.root.setOnClickListener {
+                onItemClick(manga)
+            }
         }
 
     }
