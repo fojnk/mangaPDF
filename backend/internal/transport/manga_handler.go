@@ -3,6 +3,7 @@ package transport
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/fojnk/Task-Test-devBack/internal/models"
 	"github.com/gin-gonic/gin"
@@ -15,13 +16,20 @@ import (
 // @Description Get Manga List
 // @ID manga
 // @Produce  json
+// @Param offset query int true "offset"
 // @Success 200 {integer} integer 1
 // @Failure 400,404 {object} transort_error
 // @Failure 500 {object} transort_error
 // @Failure default {object} transort_error
 // @Router /api/v1/manga/list [get]
 func (h *Handler) getManga(c *gin.Context) {
-	resp, err := h.services.MangaService.GetMangaList()
+	val := c.Query("offset")
+	offset, err := strconv.Atoi(val)
+	if err != nil {
+		offset = 0
+	}
+
+	resp, err := h.services.MangaService.GetMangaList(offset)
 
 	if err != nil {
 		NewTransportErrorResponse(c, http.StatusInternalServerError, err.Error())
@@ -63,9 +71,9 @@ func (h *Handler) getMangaChapters(c *gin.Context) {
 }
 
 type DownloadInput struct {
-	ChaptersList string `json:"chapters"`
-	MangaName    string `json:"manga_id"`
-	Type         string `json:"type"`
+	ChaptersList []string `json:"chapters"`
+	MangaName    string   `json:"manga_id"`
+	Type         string   `json:"type"`
 }
 
 // @Summary Download Manga

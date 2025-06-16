@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"log/slog"
@@ -30,10 +31,10 @@ type ServersList []struct {
 
 const baseServerUrl = "https://t.readmanga.io"
 
-func GetMangaList() ([]models.Manga, error) {
+func GetMangaList(offset int) ([]models.Manga, error) {
 	var err error
 
-	pageBody, err := tools.GetPageCF("https://t.readmanga.io/list")
+	pageBody, err := tools.GetPageCF(fmt.Sprintf("https://t.readmanga.io/list/category/manga?offset=%d", offset))
 	if err != nil {
 		return []models.Manga{}, err
 	}
@@ -209,7 +210,7 @@ func DownloadManga(downData models.DownloadOpts) (string, error) {
 		}
 		time.Sleep(1 * time.Second)
 	case "chapters":
-		chaptersRaw := strings.Split(strings.Trim(downData.Chapters, "[] \""), "\",\"")
+		chaptersRaw := downData.Chapters
 		for _, ch := range chaptersRaw {
 			chapter := models.ChaptersList{
 				Path: ch,
