@@ -64,7 +64,18 @@ class DetailFragment : Fragment() {
         viewModel.loadChapters(manga)
 
         binding.btnDownloadPdf.setOnClickListener {
-            Toast.makeText(requireContext(), "Нажали скачать PDF для ${manga.title}", Toast.LENGTH_SHORT).show()
+            val selectedChapters = chapterAdapter.getSelectedChapters()
+
+            if (selectedChapters.isEmpty()) {
+                Toast.makeText(requireContext(), "Выберите хотя бы одну главу", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val selectedPaths = selectedChapters.map { it.path }
+
+            Toast.makeText(requireContext(), "Скачиваем PDF для ${manga.title}", Toast.LENGTH_SHORT).show()
+
+            viewModel.downloadManga(manga, selectedPaths)
         }
     }
 

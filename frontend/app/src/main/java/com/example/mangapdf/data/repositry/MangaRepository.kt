@@ -3,6 +3,7 @@ package com.example.mangapdf.data.repositry
 import com.example.mangapdf.models.Chapter
 import com.example.mangapdf.models.DownloadOps
 import com.example.mangapdf.models.Manga
+import com.example.mangapdf.models.StatusResponse
 
 class MangaRepository {
 
@@ -46,6 +47,15 @@ class MangaRepository {
                 )
             )
             Result.success(response)
+        } catch (exception: Exception) {
+            Result.failure(exception)
+        }
+    }
+
+    suspend fun getStatus(task: String): Result<String> {
+        return try {
+            val response = apiService.getStatus(task)
+            Result.success(response.Status)
         } catch (exception: Exception) {
             Result.failure(exception)
         }

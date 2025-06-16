@@ -44,12 +44,12 @@ interface ApiService {
 
     @GET("/api/v1/manga/status")
     suspend fun getStatus(
-        @Query("manga_id") mangaId: String
+        @Query("task_id") mangaId: String
     ): StatusResponse
 
     @GET("/api/v1/manga/result")
     suspend fun getResult(
-        @Query("manga_id") mangaId: String
+        @Query("task_id") mangaId: String
     ): Response<ResponseBody>
 
 }
