@@ -1,9 +1,12 @@
 package com.example.mangapdf.data.repositry
 
+import RetrofitInstance
+import android.os.Environment
 import com.example.mangapdf.models.Chapter
 import com.example.mangapdf.models.DownloadOps
 import com.example.mangapdf.models.Manga
-import com.example.mangapdf.models.StatusResponse
+import java.io.File
+import java.io.FileOutputStream
 
 class MangaRepository {
 
@@ -60,6 +63,35 @@ class MangaRepository {
             Result.failure(exception)
         }
     }
+
+
+    suspend fun getPDF(task: String, mangaTitle: String): File? {
+        return try {
+            val response = apiService.getResult(task)
+
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+
+                val fileName = "${mangaTitle}_${task}.pdf"
+                val downloadsFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                val outputFile = File(downloadsFolder, fileName)
+
+                body.byteStream().use { input ->
+                    FileOutputStream(outputFile).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                outputFile
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+
 }
 
 

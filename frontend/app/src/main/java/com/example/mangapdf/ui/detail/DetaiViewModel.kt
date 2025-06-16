@@ -8,8 +8,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.mangapdf.data.repositry.MangaRepository
 import com.example.mangapdf.models.Chapter
 import com.example.mangapdf.models.Manga
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
 
 class DetailViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -23,6 +25,9 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
 
     private val _status = MutableLiveData<String>()
     val status: LiveData<String> get() = _status
+
+    private val _loaded = MutableLiveData<String>()
+    val loaded: LiveData<String> get() = _loaded
 
     private val _error = MutableLiveData<String>()
     val error: LiveData<String> get() = _error
@@ -76,6 +81,18 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
             }
 
             _error.value = "Превышено количество попыток ожидания готовности файла"
+        }
+    }
+
+    fun downloadPdf(taskId: String, mangaTitle: String) {
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val file: File? = mangaRepository.getPDF(taskId, mangaTitle)
+            if (file != null) {
+                _loaded.postValue(file.absolutePath)
+            } else {
+                _error.postValue("Не удалось загрузить PDF")
+            }
         }
     }
 

@@ -61,6 +61,12 @@ class DetailFragment : Fragment() {
             Toast.makeText(requireContext(), errorMsg ?: "Ошибка загрузки глав", Toast.LENGTH_SHORT).show()
         }
 
+        viewModel.status.observe(viewLifecycleOwner) { status ->
+            if (status == "ready") {
+                viewModel.task.value?.let { viewModel.downloadPdf(it, manga.title) }
+            }
+        }
+
         viewModel.loadChapters(manga)
 
         binding.btnDownloadPdf.setOnClickListener {
