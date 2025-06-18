@@ -16,6 +16,7 @@ navigationUiKtx = "2.8.5"
 okhttp = "4.10.0"
 retrofit = "2.9.0"
 securityCryptoKtxVersion = "1.1.0-alpha07"
+adsMobileSdk = "0.16.0-alpha01"
 
 
 [libraries]
@@ -36,6 +37,7 @@ androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navi
 androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigationUiKtx" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+ads-mobile-sdk = { group = "com.google.android.libraries.ads.mobile.sdk", name = "ads-mobile-sdk", version.ref = "adsMobileSdk" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

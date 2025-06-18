@@ -12,9 +12,9 @@ class MangaRepository {
 
     private val apiService = RetrofitInstance.api
 
-    suspend fun getMangaList(): Result<List<Manga>> {
+    suspend fun getMangaList(offset: Int): Result<List<Manga>> {
         return try {
-            val response = apiService.getMangaList()
+            val response = apiService.getMangaList(offset)
             val mangaList = response.map {
                 Manga(
                     id = it.id,
@@ -41,10 +41,9 @@ class MangaRepository {
 
     suspend fun downloadManga(manga: Manga, chapters: List<String>): Result<String> {
         return try {
-            val chaptersString = "[${chapters.joinToString(", ") { "\"$it\"" }}]"
             val response = apiService.downloadManga(
                 DownloadOps(
-                    chapters = chaptersString,
+                    chapters = chapters,
                     manga_id = manga.id,
                     type = "chapters",
                 )
@@ -90,6 +89,7 @@ class MangaRepository {
             null
         }
     }
+
 
 
 }

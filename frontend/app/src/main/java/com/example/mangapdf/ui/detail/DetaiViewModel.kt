@@ -58,7 +58,7 @@ class DetailViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    private fun pollUntilReady(taskId: String, maxAttempts: Int = 10, delayMillis: Long = 10000L) {
+    private fun pollUntilReady(taskId: String, maxAttempts: Int = 50, delayMillis: Long = 15000L) {
         viewModelScope.launch {
             repeat(maxAttempts) {
                 val result = mangaRepository.getStatus(taskId)

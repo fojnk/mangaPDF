@@ -5,12 +5,12 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.example.mangapdf.models.Manga
 import com.example.mangapdf.databinding.MangaItemBinding
+import com.example.mangapdf.models.Manga
 import com.bumptech.glide.Glide
 
-
-class MangaAdapter(private val onItemClick: (Manga) -> Unit
+class MangaAdapter(
+    private val onItemClick: (Manga) -> Unit
 ) : ListAdapter<Manga, MangaAdapter.MangaViewHolder>(DIFF) {
 
     companion object {
@@ -24,7 +24,7 @@ class MangaAdapter(private val onItemClick: (Manga) -> Unit
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MangaViewHolder {
-            val binding = MangaItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val binding = MangaItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return MangaViewHolder(binding)
     }
 
@@ -54,6 +54,5 @@ class MangaAdapter(private val onItemClick: (Manga) -> Unit
                 onItemClick(manga)
             }
         }
-
     }
 }

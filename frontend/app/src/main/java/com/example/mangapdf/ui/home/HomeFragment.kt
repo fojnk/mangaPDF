@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.mangapdf.databinding.FragmentHomeBinding
 
 class HomeFragment : Fragment() {
@@ -17,26 +18,42 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var homeViewModel: HomeViewModel
+    private lateinit var mangaAdapter: MangaAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        homeViewModel = ViewModelProvider(this).get(HomeViewModel::class.java)
-
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        val mangaAdapter = MangaAdapter { manga ->
+        homeViewModel = ViewModelProvider(this)[HomeViewModel::class.java]
+
+        mangaAdapter = MangaAdapter { manga ->
             val action = HomeFragmentDirections.actionHomeToDetail(manga)
             findNavController().navigate(action)
         }
-        binding.recyclerView.layoutManager = GridLayoutManager(context, 2)
 
+        val layoutManager = GridLayoutManager(context, 2)
+        binding.recyclerView.layoutManager = layoutManager
         binding.recyclerView.adapter = mangaAdapter
 
-        homeViewModel.mangaList.observe(viewLifecycleOwner) { mangaList ->
-            mangaAdapter.submitList(mangaList)
+        // Scroll listener for pagination
+        binding.recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+
+                val totalItemCount = layoutManager.itemCount
+                val lastVisibleItem = layoutManager.findLastVisibleItemPosition()
+
+                if (totalItemCount <= lastVisibleItem + 5) {
+                    homeViewModel.loadMoreManga()
+                }
+            }
+        })
+
+        homeViewModel.mangaList.observe(viewLifecycleOwner) { list ->
+            mangaAdapter.submitList(list)
         }
 
         homeViewModel.error.observe(viewLifecycleOwner) { error ->
@@ -45,7 +62,7 @@ class HomeFragment : Fragment() {
             }
         }
 
-        homeViewModel.loadManga()
+        homeViewModel.loadMoreManga() // Initial load
 
         return root
     }
@@ -55,4 +72,3 @@ class HomeFragment : Fragment() {
         _binding = null
     }
 }
-

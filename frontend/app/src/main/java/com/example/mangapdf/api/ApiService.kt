@@ -17,6 +17,7 @@ import retrofit2.http.POST
 import retrofit2.http.Query
 
 interface ApiService {
+
     @POST("auth/login")
     fun login(
         @Header("Ip") ip: String,
@@ -29,18 +30,27 @@ interface ApiService {
         @Body registerRequest: RegisterRequest
     ): Call<AuthResponse>
 
+
+
     @GET("/api/v1/manga/list")
-    suspend fun getMangaList(): List<MangaDto>
+    suspend fun getMangaList(
+        @Query("offset") offset: Int
+    ): List<MangaDto>
+
 
     @GET("/api/v1/manga/chapters")
     suspend fun getChapters(
         @Query("manga_id") mangaId: String
     ): ChapterResponse
 
+
+
     @POST("/api/v1/manga/download")
     suspend fun downloadManga(
         @Body downloadOps: DownloadOps,
     ): String
+
+
 
     @GET("/api/v1/manga/status")
     suspend fun getStatus(

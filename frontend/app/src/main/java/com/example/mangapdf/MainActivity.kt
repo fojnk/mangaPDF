@@ -9,6 +9,7 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.mangapdf.data.local.SecurePreferencesManager
 import com.example.mangapdf.databinding.ActivityMainBinding
+import com.yandex.mobile.ads.common.MobileAds
 
 class MainActivity : AppCompatActivity() {
 

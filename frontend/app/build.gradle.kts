@@ -41,6 +41,8 @@ android {
 }
 
 dependencies {
+    implementation("com.yandex.android:mobileads:7.13.0")
+
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.okhttp)
@@ -54,10 +56,12 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.ads.mobile.sdk)
     testImplementation(libs.junit)
     implementation(libs.androidx.security.crypto.ktx.v110alpha07)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
     implementation(libs.glide)
+
 }

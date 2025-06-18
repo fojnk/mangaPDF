@@ -11,6 +11,12 @@ import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.example.mangapdf.databinding.FragmentDetailBinding
+import com.yandex.mobile.ads.rewarded.*
+import com.yandex.mobile.ads.common.AdRequest
+import com.yandex.mobile.ads.common.AdRequestError
+import com.yandex.mobile.ads.common.AdError
+import com.yandex.mobile.ads.common.AdRequestConfiguration
+import com.yandex.mobile.ads.common.ImpressionData
 
 class DetailFragment : Fragment() {
 
@@ -21,6 +27,11 @@ class DetailFragment : Fragment() {
 
     private lateinit var viewModel: DetailViewModel
     private lateinit var chapterAdapter: ChapterAdapter
+
+    private var rewardedAdLoader: RewardedAdLoader? = null
+    private var rewardedAd: RewardedAd? = null
+
+    private val adUnitId = "demo-rewarded-yandex"
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -69,6 +80,9 @@ class DetailFragment : Fragment() {
 
         viewModel.loadChapters(manga)
 
+        // Загрузить рекламу при открытии экрана
+        loadRewardedAd()
+
         binding.btnDownloadPdf.setOnClickListener {
             val selectedChapters = chapterAdapter.getSelectedChapters()
 
@@ -79,14 +93,69 @@ class DetailFragment : Fragment() {
 
             val selectedPaths = selectedChapters.map { it.path }
 
-            Toast.makeText(requireContext(), "Скачиваем PDF для ${manga.title}", Toast.LENGTH_SHORT).show()
+            showRewardedAd {
+                viewModel.downloadManga(manga, selectedPaths)
+            }
+        }
+    }
 
-            viewModel.downloadManga(manga, selectedPaths)
+    private fun loadRewardedAd() {
+        rewardedAdLoader = RewardedAdLoader(requireContext()).apply {
+            setAdLoadListener(object : RewardedAdLoadListener {
+                override fun onAdLoaded(ad: RewardedAd) {
+                    rewardedAd = ad
+                }
+
+                override fun onAdFailedToLoad(adRequestError: AdRequestError) {
+                    Toast.makeText(requireContext(), "Ошибка загрузки рекламы: ${adRequestError.description}", Toast.LENGTH_SHORT).show()
+                }
+            })
+        }
+
+        val adRequestConfiguration = AdRequestConfiguration.Builder(adUnitId).build()
+        rewardedAdLoader?.loadAd(adRequestConfiguration)
+    }
+
+
+    private fun showRewardedAd(onReward: () -> Unit) {
+        rewardedAd?.apply {
+            setAdEventListener(object : RewardedAdEventListener {
+                override fun onAdShown() {}
+
+                override fun onAdDismissed() {
+                    rewardedAd?.setAdEventListener(null)
+                    rewardedAd = null
+                    loadRewardedAd()
+                }
+
+                override fun onAdFailedToShow(adError: AdError) {
+                    rewardedAd?.setAdEventListener(null)
+                    rewardedAd = null
+                    Toast.makeText(requireContext(), "Не удалось показать рекламу", Toast.LENGTH_SHORT).show()
+                    loadRewardedAd()
+                }
+
+                override fun onAdClicked() {}
+                override fun onAdImpression(impressionData: ImpressionData?) {}
+
+                override fun onRewarded(reward: Reward) {
+                    onReward()
+                }
+            })
+            show(requireActivity())
+        } ?: run {
+            Toast.makeText(requireContext(), "Реклама не загружена. Скачивание начнётся сразу.", Toast.LENGTH_SHORT).show()
+            onReward()
+            loadRewardedAd()
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        rewardedAd?.setAdEventListener(null)
+        rewardedAd = null
+        rewardedAdLoader?.setAdLoadListener(null)
+        rewardedAdLoader = null
         _binding = null
     }
 }
