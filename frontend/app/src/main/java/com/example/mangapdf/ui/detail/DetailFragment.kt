@@ -77,6 +77,9 @@ class DetailFragment : Fragment() {
                 viewModel.task.value?.let {
                     viewModel.downloadPdf(it, manga.title)
                     Toast.makeText(requireContext(), "Загрузка завершена", Toast.LENGTH_SHORT).show()
+
+                    binding.btnDownloadPdf.isEnabled = true
+                    binding.btnDownloadPdf.text = "Скачать PDF"
                 }
 
             }
@@ -95,6 +98,9 @@ class DetailFragment : Fragment() {
             }
 
             val selectedPaths = selectedChapters.map { it.path }
+
+            binding.btnDownloadPdf.isEnabled = false
+            binding.btnDownloadPdf.text = "Загрузка..."
 
             showRewardedAd {
                 viewModel.downloadManga(manga, selectedPaths)
