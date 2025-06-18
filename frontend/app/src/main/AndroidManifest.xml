@@ -4,8 +4,6 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- android:networkSecurityConfig надо убрать это для http !!! -->
-
     <application
         android:usesCleartextTraffic="true"
         android:allowBackup="true"

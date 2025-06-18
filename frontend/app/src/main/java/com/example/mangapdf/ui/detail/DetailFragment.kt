@@ -12,11 +12,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.example.mangapdf.databinding.FragmentDetailBinding
 import com.yandex.mobile.ads.rewarded.*
-import com.yandex.mobile.ads.common.AdRequest
 import com.yandex.mobile.ads.common.AdRequestError
 import com.yandex.mobile.ads.common.AdError
 import com.yandex.mobile.ads.common.AdRequestConfiguration
 import com.yandex.mobile.ads.common.ImpressionData
+import androidx.core.view.ViewCompat
 
 class DetailFragment : Fragment() {
 
@@ -74,13 +74,16 @@ class DetailFragment : Fragment() {
 
         viewModel.status.observe(viewLifecycleOwner) { status ->
             if (status == "ready") {
-                viewModel.task.value?.let { viewModel.downloadPdf(it, manga.title) }
+                viewModel.task.value?.let {
+                    viewModel.downloadPdf(it, manga.title)
+                    Toast.makeText(requireContext(), "Загрузка завершена", Toast.LENGTH_SHORT).show()
+                }
+
             }
         }
 
         viewModel.loadChapters(manga)
 
-        // Загрузить рекламу при открытии экрана
         loadRewardedAd()
 
         binding.btnDownloadPdf.setOnClickListener {
@@ -126,6 +129,10 @@ class DetailFragment : Fragment() {
                     rewardedAd?.setAdEventListener(null)
                     rewardedAd = null
                     loadRewardedAd()
+
+                    binding.root.requestLayout()
+                    binding.root.invalidate()
+                    ViewCompat.requestApplyInsets(binding.root)
                 }
 
                 override fun onAdFailedToShow(adError: AdError) {
